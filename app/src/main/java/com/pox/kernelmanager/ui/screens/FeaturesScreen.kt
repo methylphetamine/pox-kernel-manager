@@ -151,12 +151,14 @@ fun FeaturesScreen(
 
             FeatureSliderCard(
                 title = "Charging Stop Limit",
-                valueLabel = "${uiState.features.chargeLimitPercent}%",
+                valueLabel = { "${it.toInt()}%" },
                 description = "Stops charging when battery reaches this threshold to prolong lifespan",
                 value = uiState.features.chargeLimitPercent.toFloat(),
-                valueRange = 50f..100f,
-                steps = 9,
-                onValueChange = { viewModel.setChargeLimit(it.toInt()) },
+                valueRange = 10f..100f,
+                steps = 8,
+                presets = (10..100 step 10).map { it.toFloat() },
+                presetSuffix = "%",
+                onValueCommit = { viewModel.setChargeLimit(it.toInt()) },
                 enabled = uiState.features.isSupported(TuningFeature.CHARGE_LIMIT)
             )
 
@@ -245,12 +247,12 @@ fun FeaturesScreen(
 
             FeatureSliderCard(
                 title = "Hardware Vibrator Strength",
-                valueLabel = "${uiState.features.vibratorStrengthPercent}%",
+                valueLabel = { "${it.toInt()}%" },
                 description = "Unlocked 3.3V analog haptic motor voltage driving range",
                 value = uiState.features.vibratorStrengthPercent.toFloat(),
                 valueRange = 0f..100f,
                 steps = 19,
-                onValueChange = { viewModel.setVibratorStrength(it.toInt()) },
+                onValueCommit = { viewModel.setVibratorStrength(it.toInt()) },
                 enabled = uiState.features.isSupported(TuningFeature.VIBRATOR_STRENGTH)
             )
 
@@ -273,12 +275,12 @@ fun FeaturesScreen(
 
             FeatureSliderCard(
                 title = "UFS Queue Readahead",
-                valueLabel = "${uiState.features.readAheadKb} KB",
+                valueLabel = { "${it.toInt()} KB" },
                 description = "Readahead buffer size for sequential flash throughput",
                 value = uiState.features.readAheadKb.toFloat(),
                 valueRange = 64f..512f,
                 steps = 6,
-                onValueChange = { viewModel.setReadAhead(it.toInt()) },
+                onValueCommit = { viewModel.setReadAhead(it.toInt()) },
                 enabled = uiState.features.isSupported(TuningFeature.READ_AHEAD)
             )
             UnsupportedReason(uiState.features.reasonFor(TuningFeature.READ_AHEAD))

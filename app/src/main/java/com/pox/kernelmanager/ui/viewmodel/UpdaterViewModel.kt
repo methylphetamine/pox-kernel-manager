@@ -114,28 +114,6 @@ class UpdaterViewModel : ViewModel() {
         }
     }
 
-    fun flashDownloadedPackage(file: File) {
-        viewModelScope.launch {
-            try {
-                _updateState.value = UpdateState.Flashing("Starting staging...")
-                KernelUpdateRepository.flashViaOpenRecoveryScript(file).collect { step ->
-                    _updateState.value = UpdateState.Flashing(step)
-                }
-                _updateState.value = UpdateState.FlashSuccess(
-                    "Kernel package staged to /cache/recovery/openrecoveryscript. Reboot to recovery to install."
-                )
-            } catch (e: Exception) {
-                _updateState.value = UpdateState.Error("Flashing staging failed: ${e.message}")
-            }
-        }
-    }
-
-    fun rebootToRecovery() {
-        viewModelScope.launch {
-            KernelUpdateRepository.rebootToRecovery()
-        }
-    }
-
     fun resetState() {
         _updateState.value = UpdateState.Idle
     }

@@ -35,6 +35,7 @@ import com.pox.kernelmanager.ui.theme.PoxTheme
 import com.pox.kernelmanager.ui.viewmodel.DashboardViewModel
 import com.pox.kernelmanager.ui.viewmodel.DiagnosticsViewModel
 import com.pox.kernelmanager.ui.viewmodel.FeaturesViewModel
+import com.pox.kernelmanager.ui.viewmodel.FlashViewModel
 import com.pox.kernelmanager.ui.viewmodel.UpdaterViewModel
 
 data class NavItem(
@@ -71,6 +72,7 @@ fun MainContent() {
     val dashboardViewModel: DashboardViewModel = viewModel()
     val featuresViewModel: FeaturesViewModel = viewModel()
     val updaterViewModel: UpdaterViewModel = viewModel()
+    val flashViewModel: FlashViewModel = viewModel()
     val diagnosticsViewModel: DiagnosticsViewModel = viewModel()
 
     Scaffold(
@@ -98,7 +100,7 @@ fun MainContent() {
             when (index) {
                 0 -> DashboardScreen(viewModel = dashboardViewModel)
                 1 -> FeaturesScreen(viewModel = featuresViewModel)
-                2 -> UpdaterScreen(viewModel = updaterViewModel)
+                2 -> UpdaterScreen(viewModel = updaterViewModel, flashViewModel = flashViewModel)
                 3 -> DiagnosticsScreen(viewModel = diagnosticsViewModel)
                 4 -> SettingsScreen()
             }

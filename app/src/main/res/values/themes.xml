@@ -4,4 +4,17 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">true</item>
     </style>
+
+    <!--
+        Dialog-styled wrapper for the tile long-press picker: the activity
+        window stays fully transparent, the platform alert dialog is the only
+        thing on screen. DeviceDefault follows the system dark-mode setting.
+    -->
+    <style name="Theme.PoxKernelManager.TileDialog" parent="@android:style/Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowAnimationStyle">@null</item>
+        <item name="android:backgroundDimEnabled">true</item>
+    </style>
 </resources>

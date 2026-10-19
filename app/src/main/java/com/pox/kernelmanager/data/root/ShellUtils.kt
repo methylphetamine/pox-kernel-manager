@@ -484,7 +484,7 @@ suspend fun nodeExists(path: String): Boolean = withContext(Dispatchers.IO) {
 }
 
     /** Single-quote a value for safe interpolation into a shell command. */
-    private fun shellQuote(value: String): String = "'" + value.replace("'", "'\\''") + "'"
+    fun shellQuote(value: String): String = "'" + value.replace("'", "'\\''") + "'"
 
     /**
  * Whether the kernel is unmounting modules on demand.

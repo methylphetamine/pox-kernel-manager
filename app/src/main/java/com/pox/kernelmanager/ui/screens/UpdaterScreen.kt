@@ -17,16 +17,19 @@ import androidx.compose.ui.unit.dp
 import com.pox.kernelmanager.data.AppSettings
 import com.pox.kernelmanager.data.model.KernelPackageItem
 import com.pox.kernelmanager.data.model.UpdateState
+import com.pox.kernelmanager.ui.components.KernelFlasherSection
 import com.pox.kernelmanager.ui.components.PoxTopAppBar
 import com.pox.kernelmanager.ui.components.RepositoryEditorDialog
 import com.pox.kernelmanager.ui.components.SectionHeader
 import com.pox.kernelmanager.ui.components.StatusBadge
 import com.pox.kernelmanager.ui.theme.PoxShape
+import com.pox.kernelmanager.ui.viewmodel.FlashViewModel
 import com.pox.kernelmanager.ui.viewmodel.UpdaterViewModel
 
 @Composable
 fun UpdaterScreen(
     viewModel: UpdaterViewModel,
+    flashViewModel: FlashViewModel,
     modifier: Modifier = Modifier
 ) {
     val updateState by viewModel.updateState.collectAsState()
@@ -215,65 +218,19 @@ fun UpdaterScreen(
                             )
                             Spacer(modifier = Modifier.height(14.dp))
                             Button(
-                                onClick = { viewModel.flashDownloadedPackage(state.file) },
+                                onClick = { flashViewModel.flashCachedZip(state.file) },
                                 shape = PoxShape.button
                             ) {
                                 Icon(Icons.Default.FlashOn, contentDescription = null)
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Stage & Install via OpenRecovery")
+                                Text("Back up & Flash Kernel")
                             }
-                        }
-                    }
-                }
-                is UpdateState.Flashing -> {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 4.dp),
-                        shape = PoxShape.card,
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainer
-                        )
-                    ) {
-                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.5.dp)
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Text(text = state.currentStep, style = MaterialTheme.typography.bodyMedium)
-                        }
-                    }
-                }
-                is UpdateState.FlashSuccess -> {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 4.dp),
-                        shape = PoxShape.card,
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer
-                        )
-                    ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
+                            Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Ready to Install!",
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.primary
+                                text = "The Kernel Flasher section below backs up boot + dtbo first, then queues the install for recovery. Needs TWRP / OrangeFox.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = state.message,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(
-                                onClick = { viewModel.rebootToRecovery() },
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                                shape = PoxShape.button
-                            ) {
-                                Icon(Icons.Default.RestartAlt, contentDescription = null)
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Reboot to Recovery Now")
-                            }
                         }
                     }
                 }
@@ -388,6 +345,8 @@ fun UpdaterScreen(
                     }
                 }
             }
+
+            KernelFlasherSection(viewModel = flashViewModel)
 
             Spacer(modifier = Modifier.height(24.dp))
         }

@@ -12,6 +12,12 @@ import com.pox.kernelmanager.data.repo.TuningRepository
  * `android.service.quicksettings.action.QS_TILE` intent filter - that is what
  * makes it show up in the Quick Settings editor.
  */
+
+/**
+ * Gaming mode tile. Tap cycles the level; long-press opens the picker in
+ * [GamingModeTileActivity] (the app's QS_TILE_PREFERENCES activity), because
+ * TileService itself has no long-press callback.
+ */
 class GamingModeTileService : BaseTuningTileService() {
 
     override val tileIconRes = R.drawable.ic_tile_gaming

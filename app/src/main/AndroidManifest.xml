@@ -26,6 +26,24 @@
         </activity>
 
         <!--
+            Long-press target for the Gaming mode tile: SystemUI launches the
+            activity that declares QS_TILE_PREFERENCES when a tile is held, and
+            shows the App info screen when no such activity exists. The theme
+            keeps this window invisible behind a floating platform dialog.
+        -->
+        <activity
+            android:name=".tiles.GamingModeTileActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.PoxKernelManager.TileDialog">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES" />
+            </intent-filter>
+        </activity>
+
+        <!--
             One Quick Settings tile per tuning action. BIND_QUICK_SETTINGS_TILE
             restricts binding to the system; exported=true is what lets SystemUI
             bind them at all.
