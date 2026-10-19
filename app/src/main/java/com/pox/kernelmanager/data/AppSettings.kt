@@ -10,34 +10,36 @@ import kotlinx.coroutines.flow.asStateFlow
 /**
  * How the app should pick its color scheme.
  *
- * [MATERIAL_YOU] keeps the old behaviour: dynamic colors sampled from the
- * wallpaper on Android 12+, the Pox palette on older releases.
+ * [SYSTEM] is the default: it follows the device's light/dark appearance and
+ * stays monochrome in both. [MATERIAL_YOU] opts into wallpaper-sampled
+ * dynamic colors on Android 12+, which can introduce any hue (including
+ * green); older releases fall back to the monochrome palette.
  */
 enum class ThemeMode(val id: String, val label: String, val description: String) {
     MATERIAL_YOU(
         "material_you",
         "Material You",
-        "Dynamic colors sampled from your wallpaper (Android 12+). Falls back to the Pox palette on older Android."
+        "Dynamic colors sampled from your wallpaper (Android 12+). Not monochrome - the wallpaper decides the hue."
     ),
     SYSTEM(
         "system",
         "System default",
-        "Follow the device's light or dark appearance"
+        "Follow the device's light or dark appearance, monochrome either way"
     ),
     LIGHT(
         "light",
         "Light",
-        "Always use the light color scheme"
+        "Always use the monochrome light color scheme"
     ),
     DARK(
         "dark",
         "Dark",
-        "Always use the dark color scheme"
+        "Always use the monochrome dark color scheme"
     );
 
     companion object {
         fun fromId(id: String?): ThemeMode =
-            entries.firstOrNull { it.id == id } ?: MATERIAL_YOU
+            entries.firstOrNull { it.id == id } ?: SYSTEM
     }
 }
 
