@@ -57,6 +57,21 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
+      # Announce the build in the same Telegram chats as the kernel CI. Tag
+      # pushes are announced by the release job instead and PRs stay quiet, so
+      # one push produces exactly one group message.
+      - name: Notify Telegram
+        if: ${{ github.event_name != 'pull_request' && !startsWith(github.ref, 'refs/tags/v') }}
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          version="$(sed -n 's/.*versionName = "\(.*\)".*/\1/p' app/build.gradle.kts | head -n 1)"
+          bash .github/scripts/notify-telegram.sh \
+            "$(ls app/build/outputs/apk/debug/*.apk | head -n 1)" \
+            "Pox Kernel Manager ${version:-dev} (debug build)"
+
   release:
     name: Signed release
     if: startsWith(github.ref, 'refs/tags/v')
@@ -143,3 +158,17 @@ jobs:
               --title "$TAG" \
               --generate-notes
           fi
+
+      # Tag runs announce here (the compile job stays quiet for tags), so a tag
+      # push also produces exactly one group message - this time with the
+      # signed release APK attached.
+      - name: Notify Telegram
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          version="$(sed -n 's/.*versionName = "\(.*\)".*/\1/p' app/build.gradle.kts | head -n 1)"
+          bash .github/scripts/notify-telegram.sh \
+            "$(ls app/build/outputs/apk/release/*.apk | head -n 1)" \
+            "Pox Kernel Manager ${version:-dev} (release ${GITHUB_REF_NAME})"
