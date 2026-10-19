@@ -405,6 +405,14 @@ object TuningRepository {
             )
         }
 
+        // The gaming driver used to disarm dynamic fsync on some profile
+        // transitions (older builds do it on every exit from gaming mode). The
+        // saved toggle is the user's explicit choice, so re-arm it after a
+        // successful mode write and keep app and kernel in agreement.
+        if (snapshot().dynamicFsync) {
+            setDynamicFsync(true)
+        }
+
         // Say what the kernel actually runs: the driver derates Extreme to
         // Gaming while the battery is hot or nearly empty.
         val applied = readGamingRaw()
