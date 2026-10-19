@@ -28,18 +28,22 @@
         <!--
             Long-press target for the Gaming mode tile: SystemUI launches the
             activity that declares QS_TILE_PREFERENCES when a tile is held, and
-            shows the App info screen when no such activity exists. The theme
-            keeps this window invisible behind a floating platform dialog.
+            shows the App info screen when no such activity exists.
+            singleInstance puts the popup in a task of its own and the theme is
+            a floating dialog window (the BegoTorch recipe), so holding the tile
+            grows a small popup over the shade instead of pulling the manager
+            app to the foreground behind it.
         -->
         <activity
             android:name=".tiles.GamingModeTileActivity"
             android:exported="true"
             android:excludeFromRecents="true"
             android:noHistory="true"
-            android:launchMode="singleTop"
+            android:launchMode="singleInstance"
             android:theme="@style/Theme.PoxKernelManager.TileDialog">
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
 
