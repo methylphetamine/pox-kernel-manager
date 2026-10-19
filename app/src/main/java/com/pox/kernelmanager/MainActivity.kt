@@ -81,7 +81,9 @@ fun MainContent() {
                     NavigationBarItem(
                         selected = selectedIndex == index,
                         onClick = { selectedIndex = index },
-                        icon = { Icon(imageVector = item.icon, contentDescription = item.title) },
+                        // The label already carries the text for accessibility;
+                        // a description on the icon made TalkBack say it twice.
+                        icon = { Icon(imageVector = item.icon, contentDescription = null) },
                         label = { Text(item.title) }
                     )
                 }

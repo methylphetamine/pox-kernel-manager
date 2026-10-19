@@ -1,6 +1,5 @@
 package com.pox.kernelmanager.ui.screens
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,12 +10,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
@@ -33,6 +34,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.pox.kernelmanager.data.AppSettings
@@ -42,6 +44,7 @@ import com.pox.kernelmanager.data.repo.TuningRepository
 import com.pox.kernelmanager.ui.components.PoxTopAppBar
 import com.pox.kernelmanager.ui.components.RepositoryEditorDialog
 import com.pox.kernelmanager.ui.components.SectionHeader
+import com.pox.kernelmanager.ui.theme.PoxShape
 import kotlinx.coroutines.launch
 
 /**
@@ -75,24 +78,33 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 5.dp),
-                shape = RoundedCornerShape(20.dp),
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                shape = PoxShape.card,
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer
                 )
             ) {
-                Column(modifier = Modifier.padding(vertical = 6.dp)) {
+                Column(
+                    modifier = Modifier
+                        .padding(vertical = 6.dp)
+                        .selectableGroup()
+                ) {
                     ThemeMode.entries.forEach { mode ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { AppSettings.setThemeMode(mode) }
+                                .selectable(
+                                    selected = themeMode == mode,
+                                    role = Role.RadioButton,
+                                    onClick = { AppSettings.setThemeMode(mode) }
+                                )
                                 .padding(horizontal = 16.dp, vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            // The row owns the action; the button is the visual state.
                             RadioButton(
                                 selected = themeMode == mode,
-                                onClick = { AppSettings.setThemeMode(mode) }
+                                onClick = null
                             )
                             Spacer(modifier = Modifier.width(10.dp))
                             Column {
@@ -121,8 +133,8 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 5.dp),
-                shape = RoundedCornerShape(20.dp),
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                shape = PoxShape.card,
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer
                 )
@@ -142,12 +154,14 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                         Text(
                             text = repository,
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                     Spacer(modifier = Modifier.width(12.dp))
-                    TextButton(onClick = { showRepositoryDialog = true }) {
+                    TextButton(
+                        onClick = { showRepositoryDialog = true },
+                        shape = PoxShape.button
+                    ) {
                         Text("Change")
                     }
                 }
@@ -161,8 +175,8 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 5.dp),
-                shape = RoundedCornerShape(20.dp),
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                shape = PoxShape.card,
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer
                 )
@@ -177,7 +191,6 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                         Text(
                             text = "Restore saved tuning",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
@@ -207,16 +220,19 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                             }
                         },
                         enabled = !restoring,
-                        shape = RoundedCornerShape(12.dp)
+                        shape = PoxShape.button
                     ) {
+                        // Stable button: the spinner joins the label instead of
+                        // replacing it, so the control does not jump size.
                         if (restoring) {
                             CircularProgressIndicator(
-                                modifier = Modifier.size(18.dp),
-                                strokeWidth = 2.dp
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                                color = LocalContentColor.current
                             )
-                        } else {
-                            Text("Re-apply")
+                            Spacer(modifier = Modifier.width(8.dp))
                         }
+                        Text("Re-apply")
                     }
                 }
             }
@@ -229,8 +245,8 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 5.dp),
-                shape = RoundedCornerShape(20.dp),
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                shape = PoxShape.card,
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer
                 )

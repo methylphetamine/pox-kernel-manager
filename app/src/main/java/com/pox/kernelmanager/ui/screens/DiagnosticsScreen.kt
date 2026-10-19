@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Save
@@ -29,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import com.pox.kernelmanager.ui.components.FeatureSwitchCard
 import com.pox.kernelmanager.ui.components.PoxTopAppBar
 import com.pox.kernelmanager.ui.components.SectionHeader
+import com.pox.kernelmanager.ui.theme.PoxShape
 import com.pox.kernelmanager.ui.viewmodel.DiagnosticsViewModel
 
 @Composable
@@ -102,7 +102,7 @@ fun DiagnosticsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 5.dp),
-                shape = RoundedCornerShape(20.dp),
+                shape = PoxShape.card,
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer
                 )
@@ -164,7 +164,7 @@ fun DiagnosticsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 5.dp),
-                shape = RoundedCornerShape(20.dp),
+                shape = PoxShape.card,
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer
                 )
@@ -180,7 +180,6 @@ fun DiagnosticsScreen(
                         Text(
                             text = "Export Diagnostic Report",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
@@ -194,19 +193,20 @@ fun DiagnosticsScreen(
                     Button(
                         onClick = { viewModel.exportFullReport() },
                         enabled = !uiState.isExporting,
-                        shape = RoundedCornerShape(12.dp)
+                        shape = PoxShape.button
                     ) {
+                        // Stable width: the spinner replaces the icon only.
                         if (uiState.isExporting) {
                             CircularProgressIndicator(
-                                modifier = Modifier.size(18.dp),
+                                modifier = Modifier.size(16.dp),
                                 strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.onPrimary
+                                color = LocalContentColor.current
                             )
                         } else {
                             Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Export")
                         }
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Export")
                     }
                 }
             }
@@ -221,7 +221,7 @@ fun DiagnosticsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 5.dp),
-                shape = RoundedCornerShape(20.dp),
+                shape = PoxShape.card,
                 colors = CardDefaults.outlinedCardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
                 ),
@@ -261,7 +261,7 @@ fun DiagnosticsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 5.dp),
-                shape = RoundedCornerShape(20.dp),
+                shape = PoxShape.card,
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer
                 )

@@ -2,7 +2,6 @@ package com.pox.kernelmanager.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -24,8 +23,10 @@ import com.pox.kernelmanager.ui.components.PoxTopAppBar
 import com.pox.kernelmanager.ui.components.SectionHeader
 import com.pox.kernelmanager.ui.components.StatCard
 import com.pox.kernelmanager.ui.components.StatusBadge
+import com.pox.kernelmanager.ui.theme.PoxShape
 import com.pox.kernelmanager.ui.viewmodel.DashboardViewModel
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun DashboardScreen(
     viewModel: DashboardViewModel,
@@ -71,12 +72,12 @@ fun DashboardScreen(
                 .padding(paddingValues)
                 .verticalScroll(scrollState)
         ) {
-            // Hero Card: Kernel & Device Overview (Expressive 28dp M3 Surface)
+            // Hero card: the screen's single expressive surface.
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                shape = RoundedCornerShape(28.dp),
+                shape = PoxShape.hero,
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer
                 )
@@ -101,7 +102,7 @@ fun DashboardScreen(
                             )
                         }
                         Surface(
-                            shape = RoundedCornerShape(12.dp),
+                            shape = PoxShape.pill,
                             color = MaterialTheme.colorScheme.primary
                         ) {
                             // Read from BuildConfig rather than a literal, which had drifted from
@@ -126,22 +127,23 @@ fun DashboardScreen(
                     Text(
                         text = "${uiState.deviceInfo.deviceModel} (${uiState.deviceInfo.codename}) • ${uiState.deviceInfo.socName}",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
                         modifier = Modifier.padding(top = 4.dp)
                     )
                     if (uiState.deviceInfo.rootProviderVersion.isNotBlank()) {
                         Text(
                             text = uiState.deviceInfo.rootProviderVersion,
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f),
                             modifier = Modifier.padding(top = 2.dp)
                         )
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
-                    // Badges row
-                    Row(
+                    // Badges wrap at large font scales instead of clipping.
+                    FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         // UNKNOWN is a framework we could not identify, not a rooted device:
@@ -175,7 +177,7 @@ fun DashboardScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 StatCard(
                     title = "Battery Level",
@@ -194,8 +196,6 @@ fun DashboardScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
-
             // Section: CPU Complex (Helio G90T 8-cores)
             SectionHeader(
                 title = "CPU & Schedutil Complex",
@@ -205,7 +205,7 @@ fun DashboardScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 val bigCoreFreq = uiState.stats.cpuCores.getOrNull(6)?.currentFreqMhz ?: 2050
                 val littleCoreFreq = uiState.stats.cpuCores.getOrNull(0)?.currentFreqMhz ?: 1400
@@ -228,8 +228,6 @@ fun DashboardScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
-
             // Section: GPU & Memory Compression
             SectionHeader(
                 title = "Mali-G76 GPU & ZRAM Engine",
@@ -239,7 +237,7 @@ fun DashboardScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 StatCard(
                     title = "Mali-G76 MC4",

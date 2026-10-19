@@ -2,7 +2,6 @@ package com.pox.kernelmanager.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -18,9 +17,10 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.pox.kernelmanager.data.model.TuningFeature
 import com.pox.kernelmanager.data.model.GamingModeLevel
 import com.pox.kernelmanager.ui.components.*
+import com.pox.kernelmanager.ui.theme.PoxShape
 import com.pox.kernelmanager.ui.viewmodel.FeaturesViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun FeaturesScreen(
     viewModel: FeaturesViewModel,
@@ -79,17 +79,16 @@ fun FeaturesScreen(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 5.dp),
-                shape = RoundedCornerShape(20.dp),
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                shape = PoxShape.card,
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer
                 )
             ) {
-                Column(modifier = Modifier.padding(18.dp)) {
+                Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         text = "Active Performance Profile",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(10.dp))
@@ -192,8 +191,8 @@ fun FeaturesScreen(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 5.dp),
-                shape = RoundedCornerShape(20.dp),
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                shape = PoxShape.card,
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer
                 )
@@ -209,7 +208,6 @@ fun FeaturesScreen(
                         Text(
                             text = "Force Memory Reclaim",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
@@ -223,7 +221,7 @@ fun FeaturesScreen(
                     FilledTonalButton(
                         onClick = { viewModel.triggerXswapdReclaim() },
                         enabled = uiState.features.isSupported(TuningFeature.XSWAPD),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = PoxShape.button
                     ) {
                         Text("Reclaim")
                     }
@@ -350,13 +348,15 @@ fun FeaturesScreen(
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
                 Spacer(modifier = Modifier.height(6.dp))
-                Row(modifier = Modifier.padding(horizontal = 16.dp)) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                ) {
                     listOf(128L, 256L, 512L, 1024L, 2048L).forEach { size ->
                         FilterChip(
                             selected = uiState.features.zramSizeMb == size,
                             onClick = { viewModel.setZramSizeMb(size) },
-                            label = { Text("${size}M", style = MaterialTheme.typography.labelSmall) },
-                            modifier = Modifier.padding(end = 6.dp)
+                            label = { Text("${size}M", style = MaterialTheme.typography.labelSmall) }
                         )
                     }
                 }

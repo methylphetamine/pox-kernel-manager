@@ -1,10 +1,9 @@
 package com.pox.kernelmanager.ui.screens
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -12,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.pox.kernelmanager.data.AppSettings
@@ -21,6 +21,7 @@ import com.pox.kernelmanager.ui.components.PoxTopAppBar
 import com.pox.kernelmanager.ui.components.RepositoryEditorDialog
 import com.pox.kernelmanager.ui.components.SectionHeader
 import com.pox.kernelmanager.ui.components.StatusBadge
+import com.pox.kernelmanager.ui.theme.PoxShape
 import com.pox.kernelmanager.ui.viewmodel.UpdaterViewModel
 
 @Composable
@@ -57,7 +58,7 @@ fun UpdaterScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                shape = RoundedCornerShape(24.dp),
+                shape = PoxShape.hero,
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer
                 )
@@ -77,7 +78,6 @@ fun UpdaterScreen(
                             Text(
                                 text = latestRelease?.name ?: "Pox Mainline",
                                 style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                         }
@@ -85,7 +85,7 @@ fun UpdaterScreen(
                         FilledTonalButton(
                             onClick = { viewModel.checkForUpdates() },
                             enabled = updateState !is UpdateState.Checking && updateState !is UpdateState.Downloading,
-                            shape = RoundedCornerShape(14.dp)
+                            shape = PoxShape.button
                         ) {
                             Icon(Icons.Default.Sync, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(6.dp))
@@ -125,14 +125,14 @@ fun UpdaterScreen(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 6.dp),
-                        shape = RoundedCornerShape(20.dp),
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        shape = PoxShape.card,
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surfaceContainer
                         )
                     ) {
                         Row(
-                            modifier = Modifier.padding(20.dp),
+                            modifier = Modifier.padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.5.dp)
@@ -148,17 +148,16 @@ fun UpdaterScreen(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 6.dp),
-                        shape = RoundedCornerShape(20.dp),
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        shape = PoxShape.card,
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.secondaryContainer
                         )
                     ) {
-                        Column(modifier = Modifier.padding(20.dp)) {
+                    Column(modifier = Modifier.padding(16.dp)) {
                             Text(
                                 text = "Downloading ${state.packageName}",
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer
                             )
                             Spacer(modifier = Modifier.height(10.dp))
@@ -175,12 +174,12 @@ fun UpdaterScreen(
                             ) {
                                 Text(
                                     text = "${String.format("%.1f", state.downloadedMb)} MB / ${String.format("%.1f", state.totalMb)} MB (${state.progressPercent}%)",
-                                    style = MaterialTheme.typography.labelSmall,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
                                     color = MaterialTheme.colorScheme.onSecondaryContainer
                                 )
                                 Text(
                                     text = "${String.format("%.0f", state.speedKbps)} KB/s",
-                                    style = MaterialTheme.typography.labelSmall,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.primary
                                 )
@@ -192,20 +191,19 @@ fun UpdaterScreen(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 6.dp),
-                        shape = RoundedCornerShape(20.dp),
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        shape = PoxShape.card,
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.primaryContainer
                         )
                     ) {
-                        Column(modifier = Modifier.padding(20.dp)) {
+                    Column(modifier = Modifier.padding(16.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Default.Verified, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = "Download Complete & Verified",
                                     style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
                             }
@@ -218,7 +216,7 @@ fun UpdaterScreen(
                             Spacer(modifier = Modifier.height(14.dp))
                             Button(
                                 onClick = { viewModel.flashDownloadedPackage(state.file) },
-                                shape = RoundedCornerShape(12.dp)
+                                shape = PoxShape.button
                             ) {
                                 Icon(Icons.Default.FlashOn, contentDescription = null)
                                 Spacer(modifier = Modifier.width(6.dp))
@@ -231,13 +229,13 @@ fun UpdaterScreen(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 6.dp),
-                        shape = RoundedCornerShape(20.dp),
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        shape = PoxShape.card,
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surfaceContainer
                         )
                     ) {
-                        Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                             CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.5.dp)
                             Spacer(modifier = Modifier.width(16.dp))
                             Text(text = state.currentStep, style = MaterialTheme.typography.bodyMedium)
@@ -248,17 +246,16 @@ fun UpdaterScreen(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 6.dp),
-                        shape = RoundedCornerShape(20.dp),
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        shape = PoxShape.card,
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.secondaryContainer
                         )
                     ) {
-                        Column(modifier = Modifier.padding(20.dp)) {
+                    Column(modifier = Modifier.padding(16.dp)) {
                             Text(
                                 text = "Ready to Install!",
                                 style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Spacer(modifier = Modifier.height(6.dp))
@@ -271,7 +268,7 @@ fun UpdaterScreen(
                             Button(
                                 onClick = { viewModel.rebootToRecovery() },
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                                shape = RoundedCornerShape(12.dp)
+                                shape = PoxShape.button
                             ) {
                                 Icon(Icons.Default.RestartAlt, contentDescription = null)
                                 Spacer(modifier = Modifier.width(6.dp))
@@ -284,8 +281,8 @@ fun UpdaterScreen(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 6.dp),
-                        shape = RoundedCornerShape(20.dp),
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        shape = PoxShape.card,
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
@@ -296,7 +293,11 @@ fun UpdaterScreen(
                                 color = MaterialTheme.colorScheme.onErrorContainer
                             )
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text(text = state.message, color = MaterialTheme.colorScheme.onErrorContainer)
+                            Text(
+                                text = state.message,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
                         }
                     }
                 }
@@ -314,9 +315,13 @@ fun UpdaterScreen(
                 OutlinedCard(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 5.dp)
-                        .clickable { viewModel.selectPackage(item) },
-                    shape = RoundedCornerShape(20.dp),
+                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                        .selectable(
+                            selected = isSelected,
+                            role = Role.RadioButton,
+                            onClick = { viewModel.selectPackage(item) }
+                        ),
+                    shape = PoxShape.card,
                     colors = CardDefaults.outlinedCardColors(
                         containerColor = if (isSelected) MaterialTheme.colorScheme.secondaryContainer
                         else MaterialTheme.colorScheme.surfaceContainerLow
@@ -335,7 +340,7 @@ fun UpdaterScreen(
                     ) {
                         RadioButton(
                             selected = isSelected,
-                            onClick = { viewModel.selectPackage(item) }
+                            onClick = null
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
@@ -343,7 +348,6 @@ fun UpdaterScreen(
                                 Text(
                                     text = item.editionName,
                                     style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 if (item.isRecommendedForDevice) {
@@ -359,7 +363,7 @@ fun UpdaterScreen(
                             Text(
                                 text = "Size: ${String.format("%.1f", item.sizeBytes / (1024f * 1024f))} MB",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.outline
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -376,7 +380,7 @@ fun UpdaterScreen(
                     Button(
                         onClick = { viewModel.downloadSelectedPackage() },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = PoxShape.button
                     ) {
                         Icon(Icons.Default.Download, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
