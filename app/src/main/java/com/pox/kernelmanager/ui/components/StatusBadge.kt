@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -16,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.pox.kernelmanager.ui.theme.PoxShape
 
 @Composable
 fun StatusBadge(
@@ -38,7 +38,7 @@ fun StatusBadge(
     val indicatorColor = if (isActive) activeColor else inactiveColor
 
     Surface(
-        shape = RoundedCornerShape(12.dp),
+        shape = PoxShape.pill,
         color = containerColor,
         modifier = modifier
     ) {
@@ -46,6 +46,7 @@ fun StatusBadge(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
         ) {
+            // Dot + label: state is never carried by colour alone.
             Box(
                 modifier = Modifier
                     .size(7.dp)

@@ -2,7 +2,6 @@ package com.pox.kernelmanager.ui.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -10,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.pox.kernelmanager.ui.theme.PoxShape
 
 @Composable
 fun StatCard(
@@ -22,7 +22,7 @@ fun StatCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = PoxShape.card,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         )
@@ -59,8 +59,9 @@ fun StatCard(
             }
             Spacer(modifier = Modifier.height(8.dp))
             Text(
+                // Tabular figures: live values must not jitter as digits change.
                 text = value,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleLarge.copy(fontFeatureSettings = "tnum"),
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )

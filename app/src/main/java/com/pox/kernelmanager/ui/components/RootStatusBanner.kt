@@ -5,9 +5,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.CheckCircle
@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.pox.kernelmanager.ui.theme.PoxShape
 
 /**
  * Root status banner for the tuning screen.
@@ -49,8 +50,8 @@ fun RootStatusBanner(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp),
-        shape = RoundedCornerShape(20.dp),
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        shape = PoxShape.card,
         colors = CardDefaults.cardColors(containerColor = container)
     ) {
         Row(
@@ -70,7 +71,7 @@ fun RootStatusBanner(
                     fontWeight = FontWeight.Bold,
                     color = onContainer
                 )
-                Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = if (granted) {
                         "Kernel controls below are live. Anything greyed out is not implemented in this kernel build."

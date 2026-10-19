@@ -6,8 +6,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Card
@@ -20,13 +20,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.pox.kernelmanager.ui.theme.PoxShape
 
 /**
  * Explains why a control above it is greyed out.
  *
  * Without this, a disabled switch is indistinguishable from one that is merely
  * off, which left users thinking the app was broken when the node simply does
- * not exist in this kernel.
+ * not exist in this kernel. The 2dp gap above keeps it visually attached to
+ * the card it explains.
  */
 @Composable
 fun UnsupportedReason(
@@ -39,7 +41,7 @@ fun UnsupportedReason(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 2.dp),
-        shape = RoundedCornerShape(14.dp),
+        shape = PoxShape.panel,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         )
@@ -53,7 +55,7 @@ fun UnsupportedReason(
                 imageVector = Icons.Default.Info,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.width(18.dp)
+                modifier = Modifier.size(18.dp)
             )
             Spacer(modifier = Modifier.width(10.dp))
             Column {

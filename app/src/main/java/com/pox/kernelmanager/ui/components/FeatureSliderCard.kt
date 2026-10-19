@@ -1,13 +1,15 @@
 package com.pox.kernelmanager.ui.components
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.pox.kernelmanager.ui.theme.PoxShape
 
 @Composable
 fun FeatureSliderCard(
@@ -22,11 +24,13 @@ fun FeatureSliderCard(
     modifier: Modifier = Modifier,
     enabled: Boolean = true
 ) {
+    val contentAlpha = if (enabled) 1f else 0.6f
+
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 5.dp),
-        shape = RoundedCornerShape(20.dp),
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        shape = PoxShape.card,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         )
@@ -44,18 +48,17 @@ fun FeatureSliderCard(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha)
                 )
                 Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer
+                    shape = PoxShape.pill,
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = contentAlpha)
                 ) {
                     Text(
                         text = valueLabel,
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = contentAlpha),
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                     )
                 }
@@ -63,7 +66,7 @@ fun FeatureSliderCard(
             Text(
                 text = description,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = contentAlpha),
                 modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
             )
             Slider(
@@ -73,7 +76,9 @@ fun FeatureSliderCard(
                 valueRange = valueRange,
                 steps = steps,
                 enabled = enabled,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics { stateDescription = valueLabel }
             )
         }
     }
