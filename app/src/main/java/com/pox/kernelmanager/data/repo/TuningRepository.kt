@@ -96,22 +96,9 @@ object TuningRepository {
         val support = KernelNodes.support()
 
         val savedGaming = prefs.getInt(KEY_GAMING_MODE, 0)
-        val gamingRaw = if (isRoot) {
-            val mode = ShellUtils.fastRead(KernelNodes.GAMING_MODE_SYS)?.trim()?.toIntOrNull()
-            if (mode != null) mode else {
-                val boost = ShellUtils.readNode(KernelNodes.BOOST_FG)?.trim()?.toIntOrNull()
-                if (boost != null) {
-                    boostForMode.entries.minByOrNull { kotlin.math.abs(it.value - boost) }?.key?.value
-                        ?: savedGaming
-                } else savedGaming
-            }
-        } else savedGaming
+        val gamingRaw = if (isRoot) readGamingRaw() ?: savedGaming else savedGaming
 
-        val gamingLevel = when (gamingRaw) {
-            1 -> GamingModeLevel.GAMING
-            2 -> GamingModeLevel.EXTREME
-            else -> GamingModeLevel.BALANCED
-        }
+        val gamingLevel = gamingLevelOf(gamingRaw)
 
         val touchBoost = if (isRoot) {
             KernelNodes.parseUsrtchField(
@@ -244,6 +231,27 @@ object TuningRepository {
         else -> GamingModeLevel.BALANCED
     }
 
+    /** `/proc/perfmgr/gaming_mode` reports the live state as `gaming_mode: N`. */
+    private val gamingProcLine = Regex("gaming_mode:\\s*(-?\\d+)")
+
+    /**
+     * The level the kernel is actually running.
+     *
+     * The onyx builds report the live state in `/proc/perfmgr/gaming_mode`
+     * (first line `gaming_mode: N`), with `/sys/kernel/gaming_mode` as an int
+     * mirror. The EAS boost heuristic only serves older builds without either
+     * node.
+     */
+    private suspend fun readGamingRaw(): Int? {
+        gamingProcLine.find(ShellUtils.fastRead(KernelNodes.GAMING_MODE_PROC).orEmpty())
+            ?.groupValues?.get(1)?.toIntOrNull()?.let { return it }
+
+        ShellUtils.fastRead(KernelNodes.GAMING_MODE_SYS)?.trim()?.toIntOrNull()?.let { return it }
+
+        val boost = ShellUtils.readNode(KernelNodes.BOOST_FG)?.trim()?.toIntOrNull() ?: return null
+        return boostForMode.entries.minByOrNull { kotlin.math.abs(it.value - boost) }?.key?.value
+    }
+
     /** The last choices made in the app, read straight from app storage. */
     fun snapshot(): TuningSnapshot = TuningSnapshot(
         gamingMode = gamingLevelOf(prefs.getInt(KEY_GAMING_MODE, 0)),
@@ -355,13 +363,33 @@ object TuningRepository {
         if (!ShellUtils.isRootAvailable()) return@withContext notApplied(level.title)
         if (!isSupported(TuningFeature.GAMING_MODE)) return@withContext unsupported(TuningFeature.GAMING_MODE)
 
+        // The controller boots into its dynamic "auto" engine, which treats
+        // level writes as hints: vote hysteresis can keep the old profile
+        // (Gaming -> Extreme, or any step down) until real load happens to
+        // change, so the setting looked like it never applied. "manual" pins
+        // the engine to exactly what is written next, which is also what the
+        // UI reads back.
+        ShellUtils.fastWrite(
+            KernelNodes.GAMING_MODE_PROC,
+            "manual",
+            verify = { dump -> dump.contains("(manual") }
+        )
+
         val boost = boostForMode[level] ?: 0
 
-        val boosted = applyKernelWrites(
-            successLabel = "${level.title} - EAS boost $boost",
-            KernelNodes.GAMING_MODE_PROC to level.value.toString(),
-            KernelNodes.GAMING_MODE_SYS to level.value.toString(),
-            KernelNodes.BOOST_FG to boost.toString()
+        // `/proc/perfmgr/gaming_mode` answers with a multi-line status dump, so
+        // its write is verified against the `gaming_mode: N` line rather than
+        // the generic exact-match check.
+        val written = listOf(
+            ShellUtils.fastWrite(
+                KernelNodes.GAMING_MODE_PROC,
+                level.value.toString(),
+                verify = { dump ->
+                    gamingProcLine.find(dump)?.groupValues?.get(1)?.toIntOrNull() == level.value
+                }
+            ),
+            ShellUtils.fastWrite(KernelNodes.GAMING_MODE_SYS, level.value.toString()),
+            ShellUtils.fastWrite(KernelNodes.BOOST_FG, boost.toString())
         )
 
         if (boost > 0) {
@@ -370,7 +398,29 @@ object TuningRepository {
             applyTouchBoost(false, level)
         }
 
-        boosted
+        if (written.none { it }) {
+            return@withContext TuningApplyResult(
+                false,
+                "Kernel rejected the write - none of ${KernelNodes.GAMING_MODE_PROC}, " +
+                    "${KernelNodes.GAMING_MODE_SYS}, ${KernelNodes.BOOST_FG} are writable"
+            )
+        }
+
+        // Say what the kernel actually runs: the driver derates Extreme to
+        // Gaming while the battery is hot or nearly empty.
+        val applied = readGamingRaw()
+        if (applied != null && applied != level.value) {
+            val appliedLevel = gamingLevelOf(applied)
+            val detail =
+                if (level == GamingModeLevel.EXTREME && appliedLevel == GamingModeLevel.GAMING) {
+                    "derated to Gaming (battery health guard)"
+                } else {
+                    "kernel reports ${appliedLevel.title}"
+                }
+            TuningApplyResult(true, "${level.title} requested - $detail")
+        } else {
+            TuningApplyResult(true, "${level.title} - EAS boost $boost")
+        }
     }
 
     private suspend fun applyTouchBoost(enable: Boolean, level: GamingModeLevel): TuningApplyResult {

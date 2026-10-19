@@ -28,7 +28,7 @@ The official native companion Android application for the **Pox Kernel** (`POX-p
   * Mali-G76 MC4 GPU load and clock speed tracker.
   * ZRAM and RAM allocation breakdown with live compression ratio calculation.
 * **Kernel Tuning & Power Governance**:
-  * Unified `/proc/perfmgr/gaming_mode` controller (Balanced, Gaming, Extreme).
+  * Unified `/proc/perfmgr/gaming_mode` controller (Balanced, Gaming, Extreme). Selecting a profile pins the controller to manual mode, so the choice applies immediately instead of being treated as a dynamic-engine hint, and the UI always shows the level the kernel actually runs (Extreme is honestly reported as derated to Gaming while the battery is hot or nearly empty).
   * Direct-Power Bypass Charging mode to eliminate battery heating during heavy gaming.
   * FPSGO touch boost toggle. The old dead debounce node is gone; Gaming and Extreme modes enable the boost automatically.
   * HyperOS `xswapd` daemon toggle and on-demand 100MB force proactive memory reclamation.
