@@ -57,6 +57,18 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
+      # Mirror the debug APK to Gofile so it can be grabbed from a phone
+      # without the Actions UI. Tag pushes are mirrored by the release job
+      # instead, so one build never uploads twice.
+      - name: Mirror APK to Gofile
+        if: ${{ github.event_name != 'pull_request' && !startsWith(github.ref, 'refs/tags/v') }}
+        continue-on-error: true
+        run: |
+          version="$(sed -n 's/.*versionName = "\(.*\)".*/\1/p' app/build.gradle.kts | head -n 1)"
+          apk="$(ls app/build/outputs/apk/debug/*.apk | head -n 1)"
+          cp "$apk" "$RUNNER_TEMP/PoxKernelManager-${version:-dev}-debug.apk"
+          bash .github/scripts/mirror-gofile.sh "$RUNNER_TEMP/PoxKernelManager-${version:-dev}-debug.apk"
+
       # Announce the build in the same Telegram chats as the kernel CI. Tag
       # pushes are announced by the release job instead and PRs stay quiet, so
       # one push produces exactly one group message.
@@ -158,6 +170,14 @@ jobs:
               --title "$TAG" \
               --generate-notes
           fi
+
+      - name: Mirror APK to Gofile
+        continue-on-error: true
+        run: |
+          version="$(sed -n 's/.*versionName = "\(.*\)".*/\1/p' app/build.gradle.kts | head -n 1)"
+          apk="$(ls app/build/outputs/apk/release/*.apk | head -n 1)"
+          cp "$apk" "$RUNNER_TEMP/PoxKernelManager-${version:-dev}.apk"
+          bash .github/scripts/mirror-gofile.sh "$RUNNER_TEMP/PoxKernelManager-${version:-dev}.apk"
 
       # Tag runs announce here (the compile job stays quiet for tags), so a tag
       # push also produces exactly one group message - this time with the

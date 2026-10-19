@@ -8,6 +8,9 @@
 #
 # Usage: notify-telegram.sh <apk-path> <title>
 #
+# GOFILE_PAGE: optional env var set by mirror-gofile.sh; when present a
+#              mirror link line is added to the same single message.
+#
 # Secrets:
 #   TELEGRAM_BOT_TOKEN  required; without it the step skips with a warning
 #   TELEGRAM_CHAT_ID    optional, comma/space separated list of chat ids.
@@ -65,9 +68,13 @@ if [ -n "$apk_path" ] && [ -f "$apk_path" ]; then
 fi
 
 run_url="${GITHUB_SERVER_URL:-https://github.com}/${GITHUB_REPOSITORY:-}/actions/runs/${GITHUB_RUN_ID:-}"
-message="$(printf '%s\nRef: %s\nCommit: %.7s\nAPK: %s (%s)\nSHA256: %s\nRun: %s\n' \
+gofile_line=""
+if [ -n "${GOFILE_PAGE:-}" ]; then
+  gofile_line="$(printf 'Gofile: %s\n' "$GOFILE_PAGE")"
+fi
+message="$(printf '%s\nRef: %s\nCommit: %.7s\nAPK: %s (%s)\nSHA256: %s\n%sRun: %s\n' \
   "$title" "${GITHUB_REF_NAME:-unknown}" "${GITHUB_SHA:-unknown}" \
-  "${apk_name:-not attached}" "${apk_size:-n/a}" "${apk_sha:-n/a}" "$run_url")"
+  "${apk_name:-not attached}" "${apk_size:-n/a}" "${apk_sha:-n/a}" "$gofile_line" "$run_url")"
 
 IFS=', ' read -r -a chats <<< "$chat_ids"
 
