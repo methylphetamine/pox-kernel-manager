@@ -58,10 +58,15 @@ object ShellUtils {
         appendLine("[ -e /dev/.magisk-unblock ] && echo \"${PROBE_PREFIX}magisk_unblock=1\"")
         appendLine("pidof magiskd >/dev/null 2>&1 && echo \"${PROBE_PREFIX}magiskd_running=1\"")
 
-        // KernelPatch / APatch: REQUIRES active /dev/kp character device
+        // KernelPatch family: FolkPatch / APatch / bare KernelPatch all expose /dev/kp.
+        // `fpd` only exists in FolkPatch; apd/ap_dir are shared with APatch.
         appendLine("[ -e /dev/kp ] && echo \"${PROBE_PREFIX}kp=1\"")
         appendLine("[ -d /data/adb/ap ] && echo \"${PROBE_PREFIX}ap_dir=1\"")
         appendLine("[ -x /data/adb/ap/bin/apd ] && echo \"${PROBE_PREFIX}apd=1\"")
+        appendLine("[ -x /data/adb/ap/bin/fpd ] && echo \"${PROBE_PREFIX}fpd=1\"")
+        appendLine("[ -x /data/adb/fp/bin/fpd ] && echo \"${PROBE_PREFIX}fpd=1\"")
+        appendLine("APD_V=\$(/data/adb/ap/bin/apd -V 2>/dev/null || /data/adb/apd -V 2>/dev/null)")
+        appendLine("[ -n \"\$APD_V\" ] && echo \"${PROBE_PREFIX}apd_ver=\$APD_V\"")
         appendLine("[ -x /data/adb/ap/bin/apstat ] && echo \"${PROBE_PREFIX}apstat=1\"")
         appendLine("[ -d /data/adb/ap/modules ] && echo \"${PROBE_PREFIX}ap_modules=1\"")
 
@@ -75,6 +80,8 @@ object ShellUtils {
         appendLine("[ -e /data/adb/ksu/.dynamic_manager ] && echo \"${PROBE_PREFIX}dynamic_mgr=1\"")
         appendLine("[ -d /data/adb/ksu/module_configs ] && echo \"${PROBE_PREFIX}module_configs=1\"")
         appendLine("[ -e /data/adb/ksu/sulogd.lock ] && echo \"${PROBE_PREFIX}sulogd_lock=1\"")
+        appendLine("KSUD_V=\$(/data/adb/ksu/bin/ksud -V 2>/dev/null || /data/adb/ksud -V 2>/dev/null)")
+        appendLine("[ -n \"\$KSUD_V\" ] && echo \"${PROBE_PREFIX}ksud_ver=\$KSUD_V\"")
 
         // Modules & Zygisk
         appendLine("grep -s -q 'zygisk' /data/adb/magisk/zygisk/* /data/adb/modules/*/module.prop 2>/dev/null && echo \"${PROBE_PREFIX}zygisk=1\"")
@@ -191,38 +198,56 @@ object ShellUtils {
             return RootProvider.MAGISK
         }
 
-        // 2. KernelPatch / APatch requires the kernel character device /dev/kp
+        // 2. KernelPatch device: FolkPatch / APatch / bare KernelPatch. FolkPatch keeps
+        //    APatch's /data/adb/ap layout, so `fpd` and the manager package discriminate.
         if (hasKp) {
-            val isApatch = "apd" in probes || "ap_dir" in probes ||
-                "me.bmax.apatch" in packages || "me.yuki.folk" in packages
-            return if (isApatch) RootProvider.APATCH else RootProvider.KERNELPATCH
-        }
-
-        // 3. KernelSU requires /sys/module/kernelsu
-        if (hasKsuDriver) {
-            val bakasu = "adbroot" in probes || "dynamic_mgr" in probes ||
-                "com.resukisu.resukisu" in packages || "org.bakasu.bakasu" in packages
-            val ksuNext = "com.rifsxd.ksunext" in packages
-            val sukisu = "com.sukisu.ultra" in packages
+            val folkpatch = "fpd" in probes || "me.yuki.folk" in packages
+            val apatch = "apd" in probes || "ap_dir" in probes || "me.bmax.apatch" in packages
             return when {
-                bakasu -> RootProvider.BAKASU
-                ksuNext -> RootProvider.KERNELSU_NEXT
-                sukisu -> RootProvider.SUKISU_ULTRA
-                else -> RootProvider.KERNELSU
+                folkpatch -> RootProvider.FOLKPATCH
+                apatch -> RootProvider.APATCH
+                else -> RootProvider.KERNELPATCH
             }
         }
 
-        // 4. If Magisk is present in any form
+        // 3. An installed manager APK outranks kernel-side markers: every KernelSU fork
+        //    shares /data/adb/ksu, so leftover BakaSU marker files (or a leftover fork
+        //    install while another manager grants su) used to relabel the active manager.
+        classifyByPackage(packages)?.let { return it }
+
+        // 4. KernelSU driver: fork name from `ksud -V`, then fork-specific files.
+        if (hasKsuDriver) {
+            classifyKernelSu(probes, probes["ksud_ver"])?.let { return it }
+            return RootProvider.KERNELSU
+        }
+
+        // 5. If Magisk is present in any form
         if (hasMagisk || "magisk_dir" in probes || "com.topjohnwu.magisk" in packages) {
             return RootProvider.MAGISK
         }
 
-        // 5. Fallback to package detection
-        val byPkg = classifyByPackage(packages)
-        if (byPkg != null) return byPkg
-
         // 6. Fallback to markers
         return classifyByMarkers(probes) ?: RootProvider.UNKNOWN
+    }
+
+    /**
+     * Tells KernelSU forks apart from the name printed by `ksud -V` (BakaSU reports
+     * "ReSukiSU", which also contains "suki", so the more specific names are matched
+     * first), falling back to BakaSU's marker files inside /data/adb/ksu.
+     */
+    private fun classifyKernelSu(probes: Map<String, String>, versionText: String?): RootProvider? {
+        val name = versionText?.lowercase().orEmpty()
+        if (name.isNotEmpty()) {
+            return when {
+                "baka" in name || "resuki" in name -> RootProvider.BAKASU
+                "next" in name -> RootProvider.KERNELSU_NEXT
+                "suki" in name -> RootProvider.SUKISU_ULTRA
+                "kernel" in name -> RootProvider.KERNELSU
+                else -> null
+            }
+        }
+        val bakasu = "adbroot" in probes || "dynamic_mgr" in probes
+        return if (bakasu) RootProvider.BAKASU else null
     }
 
     private fun classifyByPackage(packages: Set<String>): RootProvider? {
@@ -234,14 +259,12 @@ object ShellUtils {
     }
 
     private fun classifyByMarkers(probes: Map<String, String>): RootProvider? = when {
-        "kp" in probes -> {
-            if ("apd" in probes || "ap_dir" in probes) RootProvider.APATCH else RootProvider.KERNELPATCH
+        "kp" in probes -> when {
+            "fpd" in probes -> RootProvider.FOLKPATCH
+            "apd" in probes || "ap_dir" in probes -> RootProvider.APATCH
+            else -> RootProvider.KERNELPATCH
         }
-        "ksu_lkm" in probes -> {
-            val bakasu = "adbroot" in probes || "dynamic_mgr" in probes ||
-                "module_configs" in probes || "sulogd_lock" in probes
-            if (bakasu) RootProvider.BAKASU else RootProvider.KERNELSU
-        }
+        "ksu_lkm" in probes -> classifyKernelSu(probes, probes["ksud_ver"]) ?: RootProvider.KERNELSU
         "magisk_dev" in probes || "magisk_dir" in probes || "magisk_ver" in probes -> RootProvider.MAGISK
         "su_bin" in probes -> RootProvider.SUPERSU
         else -> null
@@ -249,14 +272,25 @@ object ShellUtils {
 
     private suspend fun fetchVersion(provider: RootProvider, probes: Map<String, String>): String {
         if ("uid" !in probes) return ""
+        // Versions sampled in the batched probe first; the extra round-trips below are
+        // only needed when that command was not available.
+        when (provider) {
+            RootProvider.FOLKPATCH, RootProvider.APATCH, RootProvider.KERNELPATCH ->
+                probes["apd_ver"]?.takeIf { it.isNotBlank() }?.let { return it }
+            RootProvider.BAKASU, RootProvider.KERNELSU_NEXT,
+            RootProvider.SUKISU_ULTRA, RootProvider.KERNELSU ->
+                probes["ksud_ver"]?.takeIf { it.isNotBlank() }?.let { return it }
+            else -> Unit
+        }
         if (provider == RootProvider.MAGISK && probes["magisk_ver"] != null) {
             return probes["magisk_ver"]!!
         }
         val candidates = when (provider) {
+            RootProvider.FOLKPATCH, RootProvider.APATCH,
+            RootProvider.KERNELPATCH -> listOf("/data/adb/ap/bin/apd -V", "/data/adb/apd -V")
             RootProvider.BAKASU, RootProvider.KERNELSU_NEXT,
             RootProvider.SUKISU_ULTRA, RootProvider.KERNELSU ->
                 listOf("/data/adb/ksu/bin/ksud -V", "/data/adb/ksud -V")
-            RootProvider.APATCH, RootProvider.KERNELPATCH -> listOf("/data/adb/ap/bin/apd -V", "/data/adb/apd -V")
             RootProvider.MAGISK -> listOf("magisk -v", "magisk -V")
             else -> emptyList()
         }

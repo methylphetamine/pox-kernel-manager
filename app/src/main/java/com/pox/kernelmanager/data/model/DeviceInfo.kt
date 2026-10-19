@@ -21,16 +21,22 @@ data class DeviceInfo(
  *
  * [managerPackages] are the `applicationId`s of each project's official manager APK.
  * They are matched against `pm list packages` and are the only reliable discriminator
- * between KernelSU forks: every fork shares the same on-disk layout (`/data/adb/ksu`,
- * `/data/adb/ksud`) and the same `su` interface, so path probing alone cannot tell
- * BakaSU from SukiSU from upstream KernelSU.
+ * between forks of the same project: every KernelSU fork shares the same on-disk layout
+ * (`/data/adb/ksu`, `/data/adb/ksud`) and every APatch fork keeps `/data/adb/ap`, so path
+ * probing alone cannot tell BakaSU from SukiSU from upstream KernelSU, or FolkPatch from
+ * APatch.
  *
  * Declaration order is detection priority. Keep the more specific forks above the
  * generic ones they would otherwise be swallowed by.
  */
 enum class RootProvider(val displayName: String, val managerPackages: List<String>) {
 
-    APATCH("APatch", listOf("me.bmax.apatch", "me.yuki.folk")),
+    // FolkPatch is a KernelPatch-based APatch fork (applicationId `me.yuki.folk`).
+    // It keeps APatch's /data/adb/ap layout; its own `fpd` helper (and this package)
+    // are what tell it apart from plain APatch.
+    FOLKPATCH("FolkPatch", listOf("me.yuki.folk")),
+
+    APATCH("APatch", listOf("me.bmax.apatch")),
 
     KERNELPATCH("KernelPatch", listOf("me.bmax.kernelpatch")),
 
