@@ -68,9 +68,11 @@ if [ -n "$apk_path" ] && [ -f "$apk_path" ]; then
 fi
 
 run_url="${GITHUB_SERVER_URL:-https://github.com}/${GITHUB_REPOSITORY:-}/actions/runs/${GITHUB_RUN_ID:-}"
+# printf -v keeps the trailing newline that command substitution would strip,
+# so the Gofile line never glues onto the Run line.
 gofile_line=""
 if [ -n "${GOFILE_PAGE:-}" ]; then
-  gofile_line="$(printf 'Gofile: %s\n' "$GOFILE_PAGE")"
+  printf -v gofile_line 'Gofile: %s\n' "$GOFILE_PAGE"
 fi
 message="$(printf '%s\nRef: %s\nCommit: %.7s\nAPK: %s (%s)\nSHA256: %s\n%sRun: %s\n' \
   "$title" "${GITHUB_REF_NAME:-unknown}" "${GITHUB_SHA:-unknown}" \
