@@ -120,6 +120,7 @@ fun PoxTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
+        shapes = PoxShapes,
         content = content
     )
 }
