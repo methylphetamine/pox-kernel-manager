@@ -1,8 +1,6 @@
 package com.pox.kernelmanager.data
 
-import android.content.Context
-import android.content.SharedPreferences
-import com.pox.kernelmanager.PoxApplication
+import com.pox.kernelmanager.data.storage.PoxPrefs
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -47,8 +45,8 @@ enum class ThemeMode(val id: String, val label: String, val description: String)
  * Small user preferences that are not tuning state: appearance and which
  * GitHub repository the kernel updater talks to.
  *
- * Stored in its own SharedPreferences file and written with `commit()` so a
- * force stop right after a change cannot lose it.
+ * Stored in `/sdcard/PoxManager/settings.json` and written with `commit()` so
+ * a force stop right after a change cannot lose it.
  */
 object AppSettings {
 
@@ -69,9 +67,10 @@ object AppSettings {
         "txorav/pox-kernel-begonia"
     )
 
-    private val prefs: SharedPreferences by lazy {
-        PoxApplication.instance.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    }
+    private val prefs = PoxPrefs.of("settings.json", PREFS_NAME)
+
+    /** Loads the config file up front, off the UI thread (called from the application class). */
+    fun warmup() = prefs.ensureLoaded()
 
     private val _themeMode = MutableStateFlow(ThemeMode.fromId(prefs.getString(KEY_THEME_MODE, null)))
     val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()

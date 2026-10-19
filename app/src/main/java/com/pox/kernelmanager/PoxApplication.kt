@@ -3,6 +3,8 @@ package com.pox.kernelmanager
 import android.app.Application
 import com.pox.kernelmanager.data.repo.TuningRepository
 import com.pox.kernelmanager.data.root.ShellUtils
+import com.pox.kernelmanager.data.AppSettings
+import com.pox.kernelmanager.data.repo.KernelFlasher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -33,6 +35,14 @@ class PoxApplication : Application() {
             // Touching ShellUtils installs the libsu builder; pre-warm the root
             // shell so the first dashboard read does not pay for the su prompt.
             ShellUtils.prewarm()
+
+            // Config lives in /sdcard/PoxManager and is read through the root
+            // shell; load it once here so no UI read ever waits on it.
+            runCatching {
+                AppSettings.warmup()
+                TuningRepository.warmup()
+                KernelFlasher.warmup()
+            }
 
             // Kernel tuning nodes reset on reboot, so replay the saved choices
             // once per process. The tuning screen awaits this same call, which

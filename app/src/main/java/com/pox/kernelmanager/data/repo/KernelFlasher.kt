@@ -1,11 +1,11 @@
 package com.pox.kernelmanager.data.repo
 
-import android.content.Context
 import android.os.Environment
 import android.os.Process
 import com.pox.kernelmanager.PoxApplication
 import com.pox.kernelmanager.data.root.ShellResult
 import com.pox.kernelmanager.data.root.ShellUtils
+import com.pox.kernelmanager.data.storage.PoxPrefs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -540,8 +540,12 @@ object KernelFlasher {
 
     // ----------------------------------------------------------------- private
 
-    private fun prefs() =
-        PoxApplication.instance.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    private val flasherPrefs by lazy { PoxPrefs.of("flasher.json", PREFS) }
+
+    /** Loads the config file up front, off the UI thread (called from the application class). */
+    fun warmup() = flasherPrefs.ensureLoaded()
+
+    private fun prefs() = flasherPrefs
 
     private fun sha256(file: File): String {
         val digest = MessageDigest.getInstance("SHA-256")

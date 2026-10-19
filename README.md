@@ -39,6 +39,8 @@ The official native companion Android application for the **Pox Kernel** (`POX-p
 * **Diagnostics & SELinux**:
   * Live kernel ring buffer (`dmesg`) viewer with search and log exporting.
   * One-tap complete hardware report generation to `/sdcard/Download/`.
+* **Durable Config**:
+  * Every setting lives as plain JSON in `/sdcard/PoxManager/` (`settings.json`, `tuning.json`, `flasher.json`) - visible in any file manager or TWRP, hand-editable, survives reinstalls, and is only rewritten when something actually changes in the app.
 
 ---
 

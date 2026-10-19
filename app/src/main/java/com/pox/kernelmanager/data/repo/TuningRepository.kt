@@ -1,13 +1,11 @@
 package com.pox.kernelmanager.data.repo
 
-import android.content.Context
-import android.content.SharedPreferences
-import com.pox.kernelmanager.PoxApplication
 import com.pox.kernelmanager.data.model.GamingModeLevel
 import com.pox.kernelmanager.data.model.TuningFeature
 import com.pox.kernelmanager.data.model.TuningFeatures
 import com.pox.kernelmanager.data.root.KernelNodes
 import com.pox.kernelmanager.data.root.ShellUtils
+import com.pox.kernelmanager.data.storage.PoxPrefs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -20,9 +18,10 @@ data class TuningApplyResult(
 
 object TuningRepository {
 
-    private val prefs: SharedPreferences by lazy {
-        PoxApplication.instance.getSharedPreferences("pox_tuning_prefs", Context.MODE_PRIVATE)
-    }
+    private val prefs = PoxPrefs.of("tuning.json", "pox_tuning_prefs")
+
+    /** Loads the config file up front, off the UI thread (called from the application class). */
+    fun warmup() = prefs.ensureLoaded()
 
     // Preference keys. The first dozen existed before persistence was taken
     // seriously and keep their historical names so upgrades do not lose values.
@@ -212,12 +211,12 @@ object TuningRepository {
      * marks the store as "has saved state", which is what allows the boot
      * receiver and the app itself to replay it later.
      */
-    private fun persist(block: SharedPreferences.Editor.() -> SharedPreferences.Editor) {
+    private fun persist(block: PoxPrefs.Editor.() -> Unit) {
         runCatching {
-            prefs.edit()
-                .putBoolean(KEY_HAS_SAVED_STATE, true)
-                .block()
-                .commit()
+            val editor = prefs.edit()
+            editor.putBoolean(KEY_HAS_SAVED_STATE, true)
+            editor.block()
+            editor.commit()
         }
     }
 
