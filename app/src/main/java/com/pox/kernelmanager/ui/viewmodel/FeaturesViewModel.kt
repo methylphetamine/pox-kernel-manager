@@ -37,6 +37,10 @@ class FeaturesViewModel : ViewModel() {
     fun loadFeatures() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
+            // Replay the saved tuning if this process has not done it yet. The
+            // call is a no-op otherwise, and it keeps the screen from rendering
+            // kernel defaults that are about to be replaced by saved choices.
+            TuningRepository.awaitSavedTuningRestored()
             val isRoot = ShellUtils.isRootAvailable()
             val feat = TuningRepository.getTuningFeatures()
             _uiState.value = FeaturesUiState(
@@ -89,8 +93,6 @@ fun setZramSizeMb(sizeMb: Long) = apply { TuningRepository.setZramSizeMb(sizeMb)
     fun triggerXswapdReclaim() = apply { TuningRepository.triggerXswapdReclaim() }
 
     fun toggleDt2w(enable: Boolean) = apply { TuningRepository.setDoubleTapToWake(enable) }
-
-    fun toggleTrueTone(enable: Boolean) = apply { TuningRepository.setTrueTone(enable) }
 
     fun setVibratorStrength(percent: Int) = apply { TuningRepository.setVibratorStrength(percent) }
 

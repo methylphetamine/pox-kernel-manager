@@ -24,6 +24,113 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+            One Quick Settings tile per tuning action. BIND_QUICK_SETTINGS_TILE
+            restricts binding to the system; exported=true is what lets SystemUI
+            bind them at all.
+        -->
+        <service
+            android:name=".tiles.GamingModeTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_gaming"
+            android:label="@string/tile_gaming_mode"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".tiles.TouchBoostTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_touch"
+            android:label="@string/tile_touch_boost"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".tiles.BypassChargingTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_bypass"
+            android:label="@string/tile_bypass_charging"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".tiles.ThermalGuardTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_thermal"
+            android:label="@string/tile_thermal_guard"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".tiles.XswapdTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_xswapd"
+            android:label="@string/tile_xswapd"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".tiles.DoubleTapToWakeTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_dt2w"
+            android:label="@string/tile_dt2w"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".tiles.DynamicFsyncTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_fsync"
+            android:label="@string/tile_dynamic_fsync"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".tiles.MemoryReclaimTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_reclaim"
+            android:label="@string/tile_memory_reclaim"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <!-- Replays the saved tuning into the kernel after a reboot. -->
+        <receiver
+            android:name=".boot.BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <service
+            android:name=".boot.TuningRestoreJob"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
     </application>
 
 </manifest>

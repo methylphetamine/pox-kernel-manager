@@ -14,9 +14,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.pox.kernelmanager.data.AppSettings
 import com.pox.kernelmanager.data.model.KernelPackageItem
 import com.pox.kernelmanager.data.model.UpdateState
 import com.pox.kernelmanager.ui.components.PoxTopAppBar
+import com.pox.kernelmanager.ui.components.RepositoryEditorDialog
 import com.pox.kernelmanager.ui.components.SectionHeader
 import com.pox.kernelmanager.ui.components.StatusBadge
 import com.pox.kernelmanager.ui.viewmodel.UpdaterViewModel
@@ -30,6 +32,8 @@ fun UpdaterScreen(
     val availablePackages by viewModel.availablePackages.collectAsState()
     val selectedPackage by viewModel.selectedPackage.collectAsState()
     val latestRelease by viewModel.latestRelease.collectAsState()
+    val repository by AppSettings.updaterRepository.collectAsState()
+    var showRepositoryDialog by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
 
     Scaffold(
@@ -90,11 +94,21 @@ fun UpdaterScreen(
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = "Repository: POX-project/pox-begonia-kernel",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Repository: $repository",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f)
+                        )
+                        TextButton(onClick = { showRepositoryDialog = true }) {
+                            Text("Change")
+                        }
+                    }
                     Text(
                         text = "Published Tag: ${latestRelease?.tag_name ?: "v1.0.0-Beta"}",
                         style = MaterialTheme.typography.labelMedium,
@@ -373,5 +387,17 @@ fun UpdaterScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+
+    if (showRepositoryDialog) {
+        RepositoryEditorDialog(
+            current = repository,
+            onDismiss = { showRepositoryDialog = false },
+            onSave = { value ->
+                AppSettings.setUpdaterRepository(value)
+                showRepositoryDialog = false
+                viewModel.checkForUpdates()
+            }
+        )
     }
 }

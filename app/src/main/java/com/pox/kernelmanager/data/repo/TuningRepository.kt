@@ -9,6 +9,8 @@ import com.pox.kernelmanager.data.model.TuningFeatures
 import com.pox.kernelmanager.data.root.KernelNodes
 import com.pox.kernelmanager.data.root.ShellUtils
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 data class TuningApplyResult(
@@ -21,6 +23,26 @@ object TuningRepository {
     private val prefs: SharedPreferences by lazy {
         PoxApplication.instance.getSharedPreferences("pox_tuning_prefs", Context.MODE_PRIVATE)
     }
+
+    // Preference keys. The first dozen existed before persistence was taken
+    // seriously and keep their historical names so upgrades do not lose values.
+    private const val KEY_HAS_SAVED_STATE = "has_saved_state"
+    private const val KEY_GAMING_MODE = "gaming_mode"
+    private const val KEY_TOUCH_BOOST = "touch_boost"
+    private const val KEY_BYPASS_CHARGING = "bypass_charging"
+    private const val KEY_CHARGE_LIMIT = "charge_limit"
+    private const val KEY_THERMAL_GUARD = "thermal_guard"
+    private const val KEY_TEMP_LIMIT = "temp_limit"
+    private const val KEY_XSWAPD_ENABLE = "xswapd_enable"
+    private const val KEY_XSWAPD_QUOTA = "xswapd_quota"
+    private const val KEY_DT2W = "dt2w"
+    private const val KEY_VIBRATOR_STRENGTH = "vibrator_strength"
+    private const val KEY_DYNAMIC_FSYNC = "dynamic_fsync"
+    private const val KEY_READ_AHEAD_KB = "read_ahead_kb"
+    private const val KEY_IO_SCHEDULER = "io_scheduler"
+    private const val KEY_CPU_GOVERNOR = "cpu_governor"
+    private const val KEY_ZRAM_SIZE_MB = "zram_size_mb"
+    private const val KEY_RESTORE_ATTEMPTS = "restore_attempts"
 
     /**
      * EAS boost applied per gaming level.
@@ -73,7 +95,7 @@ object TuningRepository {
         val rootEnv = ShellUtils.environment()
         val support = KernelNodes.support()
 
-        val savedGaming = prefs.getInt("gaming_mode", 0)
+        val savedGaming = prefs.getInt(KEY_GAMING_MODE, 0)
         val gamingRaw = if (isRoot) {
             val mode = ShellUtils.fastRead(KernelNodes.GAMING_MODE_SYS)?.trim()?.toIntOrNull()
             if (mode != null) mode else {
@@ -95,38 +117,38 @@ object TuningRepository {
             KernelNodes.parseUsrtchField(
                 ShellUtils.readNode(KernelNodes.USRTCH).orEmpty(),
                 "enable"
-            )?.let { it == 1 } ?: false
-        } else prefs.getBoolean("touch_boost", false)
+            )?.let { it == 1 } ?: prefs.getBoolean(KEY_TOUCH_BOOST, false)
+        } else prefs.getBoolean(KEY_TOUCH_BOOST, false)
 
         // Battery guard & charging controls
         val bypass = if (isRoot && isSupported(TuningFeature.BYPASS_CHARGING)) {
             ShellUtils.fastRead(KernelNodes.BATTERY_BYPASS_PROC) == "1" ||
             ShellUtils.fastRead(KernelNodes.BATTERY_BYPASS_SYS) == "1" ||
             ShellUtils.fastRead(KernelNodes.BATTERY_CHARGING_ENABLED) == "0"
-        } else prefs.getBoolean("bypass_charging", false)
+        } else prefs.getBoolean(KEY_BYPASS_CHARGING, false)
 
         val chargeLimit = if (isRoot && isSupported(TuningFeature.CHARGE_LIMIT)) {
             ShellUtils.fastRead(KernelNodes.BATTERY_LIMIT_PROC)?.toIntOrNull()
                 ?: ShellUtils.fastRead(KernelNodes.BATTERY_LIMIT_SYS)?.toIntOrNull()
                 ?: ShellUtils.fastRead(KernelNodes.BATTERY_CHARGE_CONTROL_LIMIT)?.toIntOrNull()
-                ?: prefs.getInt("charge_limit", 100)
-        } else prefs.getInt("charge_limit", 100)
+                ?: prefs.getInt(KEY_CHARGE_LIMIT, 100)
+        } else prefs.getInt(KEY_CHARGE_LIMIT, 100)
 
         val thermalGuard = if (isRoot && isSupported(TuningFeature.THERMAL_GUARD)) {
             ShellUtils.fastRead(KernelNodes.THERMAL_GUARD_SYS) == "1"
-        } else prefs.getBoolean("thermal_guard", false)
+        } else prefs.getBoolean(KEY_THERMAL_GUARD, false)
 
         val tempLimit = if (isRoot && isSupported(TuningFeature.THERMAL_GUARD)) {
             ShellUtils.fastRead(KernelNodes.TEMP_LIMIT_SYS)?.toIntOrNull()
-                ?: prefs.getInt("temp_limit", 48)
-        } else prefs.getInt("temp_limit", 48)
+                ?: prefs.getInt(KEY_TEMP_LIMIT, 48)
+        } else prefs.getInt(KEY_TEMP_LIMIT, 48)
 
         // xswapd is a MIUI/HyperOS userspace daemon.
         val xswapdEnable = if (isRoot && isSupported(TuningFeature.XSWAPD)) {
             ShellUtils.fastRead("/dev/memcg/memory.xswapd.enable") != "0"
-        } else prefs.getBoolean("xswapd_enable", false)
+        } else prefs.getBoolean(KEY_XSWAPD_ENABLE, false)
 
-        val savedXswapdQuota = prefs.getLong("xswapd_quota", 1024L)
+        val savedXswapdQuota = prefs.getLong(KEY_XSWAPD_QUOTA, 1024L)
         val xswapdQuota = if (isRoot && isSupported(TuningFeature.XSWAPD)) {
             (ShellUtils.fastRead("/dev/memcg/memory.xswapd.quota")?.toLongOrNull()
                 ?: (savedXswapdQuota * 1024 * 1024)) / (1024 * 1024)
@@ -135,38 +157,39 @@ object TuningRepository {
         // Touch, display and haptics
         val dt2w = if (isRoot && isSupported(TuningFeature.DT2W)) {
             ShellUtils.fastRead(KernelNodes.DT2W_PROC) == "1"
-        } else prefs.getBoolean("dt2w", false)
-
-        val trueTone = if (isRoot && isSupported(TuningFeature.TRUE_TONE)) {
-            ShellUtils.fastRead(KernelNodes.TRUE_TONE_SYS) == "1" ||
-            ShellUtils.readNode(KernelNodes.TRUE_TONE_PROC)?.contains("enabled") == true
-        } else prefs.getBoolean("true_tone", false)
+        } else prefs.getBoolean(KEY_DT2W, false)
 
         val vibrator = if (isRoot && isSupported(TuningFeature.VIBRATOR_STRENGTH)) {
             val level = ShellUtils.fastRead(KernelNodes.VIBRATOR_STRENGTH_PROC)?.toIntOrNull()
                 ?: ShellUtils.fastRead(KernelNodes.VIBRATOR_VMAX)?.toIntOrNull()
-            if (level != null) (level * 100 / 6).coerceIn(0, 100) else prefs.getInt("vibrator_strength", 85)
-        } else prefs.getInt("vibrator_strength", 85)
+            if (level != null) (level * 100 / 6).coerceIn(0, 100) else prefs.getInt(KEY_VIBRATOR_STRENGTH, 85)
+        } else prefs.getInt(KEY_VIBRATOR_STRENGTH, 85)
 
         val fsync = if (isRoot && isSupported(TuningFeature.DYNAMIC_FSYNC)) {
             ShellUtils.fastRead(KernelNodes.DYNAMIC_FSYNC_PROC) == "1" ||
             ShellUtils.fastRead(KernelNodes.DYNAMIC_FSYNC_SYS) == "1"
-        } else prefs.getBoolean("dynamic_fsync", false)
+        } else prefs.getBoolean(KEY_DYNAMIC_FSYNC, false)
 
         val readAhead = if (isRoot) {
             blockQueues().firstNotNullOfOrNull { ShellUtils.readNode("$it/read_ahead_kb") }?.toIntOrNull()
-                ?: prefs.getInt("read_ahead_kb", 256)
-        } else prefs.getInt("read_ahead_kb", 256)
+                ?: prefs.getInt(KEY_READ_AHEAD_KB, 256)
+        } else prefs.getInt(KEY_READ_AHEAD_KB, 256)
 
         val schedulerRaw = blockQueues().firstNotNullOfOrNull { ShellUtils.readNode("$it/scheduler") }.orEmpty()
-        val (activeScheduler, schedulerOptions) = KernelNodes.parseSelection(schedulerRaw)
+        val (schedulerFromKernel, schedulerOptions) = KernelNodes.parseSelection(schedulerRaw)
+        // The kernel resets queue/scheduler on reboot; fall back to the saved
+        // choice so the selector still shows what the user picked.
+        val activeScheduler = schedulerFromKernel.ifEmpty { prefs.getString(KEY_IO_SCHEDULER, null).orEmpty() }
 
         val governorRaw = KernelNodes.cpufreqPolicies()
             .firstNotNullOfOrNull { ShellUtils.readNode("$it/cpufreq/scaling_governor") }
             .orEmpty()
-        val (activeGovernor, governorOptions) = KernelNodes.parseSelection(governorRaw)
+        val (governorFromKernel, governorOptions) = KernelNodes.parseSelection(governorRaw)
+        val activeGovernor = governorFromKernel.ifEmpty { prefs.getString(KEY_CPU_GOVERNOR, null).orEmpty() }
 
-        val zramSize = ShellUtils.readNode("/sys/block/zram0/disksize")?.trim()?.toLongOrNull()?.div(1024 * 1024) ?: 0L
+        val zramSize = ShellUtils.readNode(KernelNodes.ZRAM_DISKSIZE)
+            ?.trim()?.toLongOrNull()?.div(1024 * 1024)?.takeIf { it > 0 }
+            ?: prefs.getLong(KEY_ZRAM_SIZE_MB, 0L)
 
         TuningFeatures(
             gamingMode = gamingLevel,
@@ -178,7 +201,6 @@ object TuningRepository {
             xswapdEnabled = xswapdEnable,
             xswapdQuotaMb = xswapdQuota,
             doubleTapToWake = dt2w,
-            trueToneDisplay = trueTone,
             vibratorStrengthPercent = vibrator,
             dynamicFsync = fsync,
             readAheadKb = readAhead,
@@ -193,10 +215,143 @@ object TuningRepository {
         )
     }
 
+    // ---- Persistence & boot restore ----
+
+    /**
+     * Persist a preference change synchronously.
+     *
+     * `apply()` returns before the value reaches disk, so a force stop (or an
+     * abrupt reboot) in that window could lose the write. Every change also
+     * marks the store as "has saved state", which is what allows the boot
+     * receiver and the app itself to replay it later.
+     */
+    private fun persist(block: SharedPreferences.Editor.() -> SharedPreferences.Editor) {
+        runCatching {
+            prefs.edit()
+                .putBoolean(KEY_HAS_SAVED_STATE, true)
+                .block()
+                .commit()
+        }
+    }
+
+    /** Whether the user ever changed something worth restoring. */
+    fun hasSavedState(): Boolean = runCatching { prefs.getBoolean(KEY_HAS_SAVED_STATE, false) }
+        .getOrDefault(false)
+
+    private fun gamingLevelOf(raw: Int): GamingModeLevel = when (raw) {
+        1 -> GamingModeLevel.GAMING
+        2 -> GamingModeLevel.EXTREME
+        else -> GamingModeLevel.BALANCED
+    }
+
+    /** The last choices made in the app, read straight from app storage. */
+    fun snapshot(): TuningSnapshot = TuningSnapshot(
+        gamingMode = gamingLevelOf(prefs.getInt(KEY_GAMING_MODE, 0)),
+        touchBoost = prefs.getBoolean(KEY_TOUCH_BOOST, false),
+        bypassCharging = prefs.getBoolean(KEY_BYPASS_CHARGING, false),
+        chargeLimitPercent = prefs.getInt(KEY_CHARGE_LIMIT, 100),
+        thermalGuard = prefs.getBoolean(KEY_THERMAL_GUARD, false),
+        tempLimitC = prefs.getInt(KEY_TEMP_LIMIT, 48),
+        xswapdEnabled = prefs.getBoolean(KEY_XSWAPD_ENABLE, false),
+        doubleTapToWake = prefs.getBoolean(KEY_DT2W, false),
+        vibratorStrengthPercent = prefs.getInt(KEY_VIBRATOR_STRENGTH, 85),
+        dynamicFsync = prefs.getBoolean(KEY_DYNAMIC_FSYNC, false),
+        readAheadKb = prefs.getInt(KEY_READ_AHEAD_KB, 256),
+        ioScheduler = prefs.getString(KEY_IO_SCHEDULER, null)?.takeIf { it.isNotBlank() },
+        cpuGovernor = prefs.getString(KEY_CPU_GOVERNOR, null)?.takeIf { it.isNotBlank() },
+        zramSizeMb = prefs.getLong(KEY_ZRAM_SIZE_MB, 0L).takeIf { it > 0 }
+    )
+
+    /**
+     * Replays the saved choices into the kernel.
+     *
+     * The tuning nodes are volatile: after a reboot every one of them holds its
+     * default, which is what made the app look like it had forgotten everything.
+     * Running this after boot (and once per app process) puts the device back in
+     * the state the user chose.
+     */
+    suspend fun reapplySaved(): TuningApplyResult = withContext(Dispatchers.IO) {
+        if (!hasSavedState()) {
+            return@withContext TuningApplyResult(false, "No saved tuning to restore")
+        }
+        if (!ShellUtils.isRootAvailable()) {
+            return@withContext TuningApplyResult(false, "Saved tuning kept - root is unavailable right now")
+        }
+
+        val saved = snapshot()
+        var attempted = 0
+        var applied = 0
+
+        suspend fun step(result: TuningApplyResult) {
+            attempted++
+            if (result.isHardwareApplied) applied++
+        }
+
+        // Gaming mode writes touch boost itself, so restore it first and let the
+        // explicit touch-boost choice override whatever the level decided.
+        step(setGamingMode(saved.gamingMode))
+        step(setTouchBoost(saved.touchBoost))
+        step(setBypassCharging(saved.bypassCharging))
+        step(setChargeLimit(saved.chargeLimitPercent))
+        step(setThermalGuard(saved.thermalGuard, saved.tempLimitC))
+        step(setXswapdEnabled(saved.xswapdEnabled))
+        step(setDoubleTapToWake(saved.doubleTapToWake))
+        step(setVibratorStrength(saved.vibratorStrengthPercent))
+        step(setDynamicFsync(saved.dynamicFsync))
+        step(setReadAheadKb(saved.readAheadKb))
+        saved.ioScheduler?.let { step(setIoScheduler(it)) }
+        saved.cpuGovernor?.let { step(setCpuGovernor(it)) }
+        saved.zramSizeMb?.let { step(setZramSizeMb(it)) }
+
+        TuningApplyResult(
+            isHardwareApplied = attempted > 0 && applied > 0,
+            message = "Restored $applied of $attempted saved tuning choices"
+        )
+    }
+
+    private val restoreMutex = Mutex()
+
+    @Volatile
+    private var restoredThisProcess = false
+
+    @Volatile
+    private var lastRestoreResult: TuningApplyResult? = null
+
+    /**
+     * Ensure the saved tuning has been replayed once since this process started.
+     *
+     * The first caller performs the restore, everyone else waits for it, so the
+     * tuning screen never renders kernel defaults that are about to be replaced.
+     * Returns null when there is nothing saved.
+     */
+    suspend fun awaitSavedTuningRestored(): TuningApplyResult? {
+        if (!hasSavedState()) return null
+        return restoreMutex.withLock {
+            if (restoredThisProcess) return@withLock lastRestoreResult
+            val result = reapplySaved()
+            if (result.isHardwareApplied) {
+                restoredThisProcess = true
+                lastRestoreResult = result
+            }
+            result
+        }
+    }
+
+    /** Retry bookkeeping for the post-boot restore job. */
+    fun restoreAttempts(): Int = prefs.getInt(KEY_RESTORE_ATTEMPTS, 0)
+
+    fun noteRestoreAttempt() {
+        runCatching { prefs.edit().putInt(KEY_RESTORE_ATTEMPTS, restoreAttempts() + 1).commit() }
+    }
+
+    fun clearRestoreAttempts() {
+        runCatching { prefs.edit().remove(KEY_RESTORE_ATTEMPTS).commit() }
+    }
+
     // ---- Gaming / performance ----
 
     suspend fun setGamingMode(level: GamingModeLevel): TuningApplyResult = withContext(Dispatchers.IO) {
-        prefs.edit().putInt("gaming_mode", level.value).apply()
+        persist { putInt(KEY_GAMING_MODE, level.value) }
         if (!ShellUtils.isRootAvailable()) return@withContext notApplied(level.title)
         if (!isSupported(TuningFeature.GAMING_MODE)) return@withContext unsupported(TuningFeature.GAMING_MODE)
 
@@ -236,14 +391,14 @@ object TuningRepository {
     }
 
     suspend fun setTouchBoost(enable: Boolean): TuningApplyResult = withContext(Dispatchers.IO) {
-        prefs.edit().putBoolean("touch_boost", enable).apply()
+        persist { putBoolean(KEY_TOUCH_BOOST, enable) }
         if (!ShellUtils.isRootAvailable()) return@withContext notApplied("Touch boost")
         if (!isSupported(TuningFeature.TOUCH_BOOST)) return@withContext unsupported(TuningFeature.TOUCH_BOOST)
         applyTouchBoost(enable, GamingModeLevel.GAMING)
     }
 
     suspend fun setFpsCap(enabled: Boolean): TuningApplyResult = withContext(Dispatchers.IO) {
-        prefs.edit().putBoolean("fps_cap", enabled).apply()
+        persist { putBoolean("fps_cap", enabled) }
         if (!ShellUtils.isRootAvailable()) return@withContext notApplied("FPS cap")
         if (!isSupported(TuningFeature.FPS_CAP)) return@withContext unsupported(TuningFeature.FPS_CAP)
 
@@ -256,7 +411,7 @@ object TuningRepository {
     // ---- Battery guard & charging controls ----
 
     suspend fun setBypassCharging(enable: Boolean): TuningApplyResult = withContext(Dispatchers.IO) {
-        prefs.edit().putBoolean("bypass_charging", enable).apply()
+        persist { putBoolean(KEY_BYPASS_CHARGING, enable) }
         if (!ShellUtils.isRootAvailable()) return@withContext notApplied("Bypass charging")
         if (!isSupported(TuningFeature.BYPASS_CHARGING)) return@withContext unsupported(TuningFeature.BYPASS_CHARGING)
         applyKernelWrites(
@@ -269,7 +424,7 @@ object TuningRepository {
 
     suspend fun setChargeLimit(percent: Int): TuningApplyResult = withContext(Dispatchers.IO) {
         val clamped = percent.coerceIn(50, 100)
-        prefs.edit().putInt("charge_limit", clamped).apply()
+        persist { putInt(KEY_CHARGE_LIMIT, clamped) }
         if (!ShellUtils.isRootAvailable()) return@withContext notApplied("Charge limit")
         if (!isSupported(TuningFeature.CHARGE_LIMIT)) return@withContext unsupported(TuningFeature.CHARGE_LIMIT)
         applyKernelWrites(
@@ -282,7 +437,10 @@ object TuningRepository {
 
     suspend fun setThermalGuard(enable: Boolean, tempLimit: Int): TuningApplyResult = withContext(Dispatchers.IO) {
         val clampedTemp = tempLimit.coerceIn(30, 55)
-        prefs.edit().putBoolean("thermal_guard", enable).putInt("temp_limit", clampedTemp).apply()
+        persist {
+            putBoolean(KEY_THERMAL_GUARD, enable)
+            putInt(KEY_TEMP_LIMIT, clampedTemp)
+        }
         if (!ShellUtils.isRootAvailable()) return@withContext notApplied("Thermal guard")
         if (!isSupported(TuningFeature.THERMAL_GUARD)) return@withContext unsupported(TuningFeature.THERMAL_GUARD)
         applyKernelWrites(
@@ -295,7 +453,7 @@ object TuningRepository {
     // ---- xswapd: userspace daemon ----
 
     suspend fun setXswapdEnabled(enable: Boolean): TuningApplyResult = withContext(Dispatchers.IO) {
-        prefs.edit().putBoolean("xswapd_enable", enable).apply()
+        persist { putBoolean(KEY_XSWAPD_ENABLE, enable) }
         if (!ShellUtils.isRootAvailable()) return@withContext notApplied("xswapd")
         if (!isSupported(TuningFeature.XSWAPD)) return@withContext unsupported(TuningFeature.XSWAPD)
         applyKernelWrites(
@@ -319,7 +477,7 @@ object TuningRepository {
     // ---- Touch / display / haptics ----
 
     suspend fun setDoubleTapToWake(enable: Boolean): TuningApplyResult = withContext(Dispatchers.IO) {
-        prefs.edit().putBoolean("dt2w", enable).apply()
+        persist { putBoolean(KEY_DT2W, enable) }
         if (!ShellUtils.isRootAvailable()) return@withContext notApplied("Double Tap to Wake")
         if (!isSupported(TuningFeature.DT2W)) return@withContext unsupported(TuningFeature.DT2W)
         applyKernelWrites(
@@ -328,20 +486,9 @@ object TuningRepository {
         )
     }
 
-    suspend fun setTrueTone(enable: Boolean): TuningApplyResult = withContext(Dispatchers.IO) {
-        prefs.edit().putBoolean("true_tone", enable).apply()
-        if (!ShellUtils.isRootAvailable()) return@withContext notApplied("True Tone")
-        if (!isSupported(TuningFeature.TRUE_TONE)) return@withContext unsupported(TuningFeature.TRUE_TONE)
-        applyKernelWrites(
-            successLabel = if (enable) "True Tone D65 Calibrated reference active" else "True Tone reference disabled",
-            KernelNodes.TRUE_TONE_PROC to if (enable) "1" else "0",
-            KernelNodes.TRUE_TONE_SYS to if (enable) "1" else "0"
-        )
-    }
-
     suspend fun setVibratorStrength(percent: Int): TuningApplyResult = withContext(Dispatchers.IO) {
         val clamped = percent.coerceIn(0, 100)
-        prefs.edit().putInt("vibrator_strength", clamped).apply()
+        persist { putInt(KEY_VIBRATOR_STRENGTH, clamped) }
         if (!ShellUtils.isRootAvailable()) return@withContext notApplied("Vibrator strength")
         if (!isSupported(TuningFeature.VIBRATOR_STRENGTH)) return@withContext unsupported(TuningFeature.VIBRATOR_STRENGTH)
         val level = (clamped * 6 / 100).coerceIn(1, 6)
@@ -355,7 +502,7 @@ object TuningRepository {
     // ---- Storage ----
 
     suspend fun setDynamicFsync(enable: Boolean): TuningApplyResult = withContext(Dispatchers.IO) {
-        prefs.edit().putBoolean("dynamic_fsync", enable).apply()
+        persist { putBoolean(KEY_DYNAMIC_FSYNC, enable) }
         if (!ShellUtils.isRootAvailable()) return@withContext notApplied("Dynamic Fsync")
         if (!isSupported(TuningFeature.DYNAMIC_FSYNC)) return@withContext unsupported(TuningFeature.DYNAMIC_FSYNC)
         applyKernelWrites(
@@ -366,7 +513,7 @@ object TuningRepository {
     }
 
     suspend fun setReadAheadKb(kb: Int): TuningApplyResult = withContext(Dispatchers.IO) {
-        prefs.edit().putInt("read_ahead_kb", kb).apply()
+        persist { putInt(KEY_READ_AHEAD_KB, kb) }
         if (!ShellUtils.isRootAvailable()) return@withContext notApplied("Readahead buffer")
         val queues = blockQueues()
         if (queues.isEmpty()) {
@@ -396,6 +543,7 @@ object TuningRepository {
      * the queue.
      */
     suspend fun setIoScheduler(scheduler: String): TuningApplyResult = withContext(Dispatchers.IO) {
+        persist { putString(KEY_IO_SCHEDULER, scheduler) }
         if (!ShellUtils.isRootAvailable()) return@withContext notApplied("I/O scheduler")
         if (!isSupported(TuningFeature.IO_SCHEDULER)) return@withContext unsupported(TuningFeature.IO_SCHEDULER)
 
@@ -423,6 +571,7 @@ object TuningRepository {
      * begonia compiles schedutil, performance, powersave, ondemand and userspace.
      */
     suspend fun setCpuGovernor(governor: String): TuningApplyResult = withContext(Dispatchers.IO) {
+        persist { putString(KEY_CPU_GOVERNOR, governor) }
         if (!ShellUtils.isRootAvailable()) return@withContext notApplied("CPU governor")
         if (!isSupported(TuningFeature.CPU_GOVERNOR)) return@withContext unsupported(TuningFeature.CPU_GOVERNOR)
 
@@ -443,6 +592,7 @@ object TuningRepository {
 
     /** Resize the zram backing device. Takes effect immediately. */
     suspend fun setZramSizeMb(sizeMb: Long): TuningApplyResult = withContext(Dispatchers.IO) {
+        persist { putLong(KEY_ZRAM_SIZE_MB, sizeMb) }
         if (!ShellUtils.isRootAvailable()) return@withContext notApplied("ZRAM size")
         if (!isSupported(TuningFeature.ZRAM_SIZE)) return@withContext unsupported(TuningFeature.ZRAM_SIZE)
 
@@ -455,6 +605,7 @@ object TuningRepository {
 
     /** Cap the frame rate using MediaTek's syslimiter. */
     suspend fun setFpsCap(fps: Int): TuningApplyResult = withContext(Dispatchers.IO) {
+        persist { putInt("fps_cap_fps", fps) }
         if (!ShellUtils.isRootAvailable()) return@withContext notApplied("FPS cap")
         if (!isSupported(TuningFeature.FPS_CAP)) return@withContext unsupported(TuningFeature.FPS_CAP)
 

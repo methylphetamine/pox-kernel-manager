@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Icon
@@ -28,6 +29,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.pox.kernelmanager.ui.screens.DashboardScreen
 import com.pox.kernelmanager.ui.screens.DiagnosticsScreen
 import com.pox.kernelmanager.ui.screens.FeaturesScreen
+import com.pox.kernelmanager.ui.screens.SettingsScreen
 import com.pox.kernelmanager.ui.screens.UpdaterScreen
 import com.pox.kernelmanager.ui.theme.PoxTheme
 import com.pox.kernelmanager.ui.viewmodel.DashboardViewModel
@@ -60,7 +62,8 @@ fun MainContent() {
         NavItem(title = "Dashboard", icon = Icons.Default.Speed),
         NavItem(title = "Tuning", icon = Icons.Default.Tune),
         NavItem(title = "Updater", icon = Icons.Default.Download),
-        NavItem(title = "Diagnostics", icon = Icons.Default.BugReport)
+        NavItem(title = "Diagnostics", icon = Icons.Default.BugReport),
+        NavItem(title = "Settings", icon = Icons.Default.Settings)
     )
 
     var selectedIndex by rememberSaveable { mutableIntStateOf(0) }
@@ -95,6 +98,7 @@ fun MainContent() {
                 1 -> FeaturesScreen(viewModel = featuresViewModel)
                 2 -> UpdaterScreen(viewModel = updaterViewModel)
                 3 -> DiagnosticsScreen(viewModel = diagnosticsViewModel)
+                4 -> SettingsScreen()
             }
         }
     }

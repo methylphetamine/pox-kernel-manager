@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun PoxTopAppBar(
     title: String,
-    onRefresh: () -> Unit,
+    onRefresh: (() -> Unit)? = null,
     isRefreshing: Boolean = false,
     subtitle: String? = null
 ) {
@@ -36,19 +36,21 @@ fun PoxTopAppBar(
             }
         },
         actions = {
-            IconButton(onClick = onRefresh, enabled = !isRefreshing) {
-                if (isRefreshing) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.padding(8.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = "Refresh",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+            if (onRefresh != null) {
+                IconButton(onClick = onRefresh, enabled = !isRefreshing) {
+                    if (isRefreshing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.padding(8.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Refresh",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         },

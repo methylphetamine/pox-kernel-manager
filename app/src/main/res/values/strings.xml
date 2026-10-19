@@ -4,4 +4,18 @@
     <string name="features">Tuning</string>
     <string name="updater">Updater</string>
     <string name="diagnostics">Diagnostics</string>
+    <string name="settings">Settings</string>
+
+    <!-- Quick Settings tiles -->
+    <string name="tile_gaming_mode">Gaming mode</string>
+    <string name="tile_touch_boost">Touch boost</string>
+    <string name="tile_bypass_charging">Bypass charging</string>
+    <string name="tile_thermal_guard">Thermal guard</string>
+    <string name="tile_xswapd">xswapd engine</string>
+    <string name="tile_dt2w">Double tap to wake</string>
+    <string name="tile_dynamic_fsync">Dynamic fsync</string>
+    <string name="tile_memory_reclaim">Memory reclaim</string>
+    <string name="tile_state_on">On</string>
+    <string name="tile_state_off">Off</string>
+    <string name="tile_tap_to_reclaim">Tap to reclaim</string>
 </resources>

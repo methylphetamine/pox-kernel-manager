@@ -8,7 +8,11 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
+import com.pox.kernelmanager.data.AppSettings
+import com.pox.kernelmanager.data.ThemeMode
 
 private val DarkColorScheme = darkColorScheme(
     primary = md_theme_dark_primary,
@@ -80,12 +84,30 @@ private val LightColorScheme = lightColorScheme(
     inversePrimary = md_theme_light_inversePrimary
 )
 
+/**
+ * Theme entry point that follows the appearance choice in Settings.
+ *
+ * Light/Dark pin the scheme, System follows the device, and Material You uses
+ * wallpaper colors on Android 12+ (falling back to the Pox palette otherwise).
+ */
+@Composable
+fun PoxTheme(content: @Composable () -> Unit) {
+    val themeMode by AppSettings.themeMode.collectAsState()
+    PoxTheme(themeMode = themeMode, content = content)
+}
+
 @Composable
 fun PoxTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    themeMode: ThemeMode,
     content: @Composable () -> Unit
 ) {
+    val darkTheme = when (themeMode) {
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+        ThemeMode.SYSTEM, ThemeMode.MATERIAL_YOU -> isSystemInDarkTheme()
+    }
+    val dynamicColor = themeMode == ThemeMode.MATERIAL_YOU
+
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current

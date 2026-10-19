@@ -102,8 +102,6 @@ object KernelNodes {
     const val TEMP_LIMIT_SYS = "/sys/kernel/battery_protection/temp_limit"
 
     const val DT2W_PROC = "/proc/perfmgr/dt2w"
-    const val TRUE_TONE_PROC = "/proc/perfmgr/true_tone"
-    const val TRUE_TONE_SYS = "/sys/kernel/true_tone"
 
     const val VIBRATOR_STRENGTH_PROC = "/proc/perfmgr/vibrator_strength"
     const val VIBRATOR_VMAX = "/sys/devices/platform/odm/odm:vibrator@0/leds/vibrator/vmax"
@@ -189,8 +187,6 @@ object KernelNodes {
         THERMAL_GUARD_SYS,
         TEMP_LIMIT_SYS,
         DT2W_PROC,
-        TRUE_TONE_PROC,
-        TRUE_TONE_SYS,
         VIBRATOR_STRENGTH_PROC,
         DYNAMIC_FSYNC_PROC,
         DYNAMIC_FSYNC_SYS,
@@ -261,7 +257,6 @@ object KernelNodes {
         val chargeLimit = writable(BATTERY_LIMIT_PROC) || writable(BATTERY_LIMIT_SYS) || writable(BATTERY_CHARGE_CONTROL_LIMIT)
         val thermalGuard = writable(THERMAL_GUARD_SYS)
         val dt2w = writable(DT2W_PROC)
-        val trueTone = writable(TRUE_TONE_PROC) || writable(TRUE_TONE_SYS)
         val vibrator = writable(VIBRATOR_STRENGTH_PROC) || writable(VIBRATOR_VMAX)
 
         var blockQueue: String? = null
@@ -291,7 +286,6 @@ object KernelNodes {
             TuningFeature.CHARGE_LIMIT to chargeLimit,
             TuningFeature.THERMAL_GUARD to thermalGuard,
             TuningFeature.DT2W to dt2w,
-            TuningFeature.TRUE_TONE to trueTone,
             TuningFeature.VIBRATOR_STRENGTH to vibrator,
 
             TuningFeature.READ_AHEAD to (blockQueue != null),

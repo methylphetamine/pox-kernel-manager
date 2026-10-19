@@ -1,6 +1,7 @@
 package com.pox.kernelmanager.data.repo
 
 import android.content.Context
+import com.pox.kernelmanager.data.AppSettings
 import com.pox.kernelmanager.data.model.GithubRelease
 import com.pox.kernelmanager.data.model.KernelPackageItem
 import com.pox.kernelmanager.data.root.ShellUtils
@@ -29,14 +30,21 @@ object KernelUpdateRepository {
         isLenient = true
     }
 
-    private const val GITHUB_API_PRIMARY = "https://api.github.com/repos/POX-project/pox-begonia-kernel/releases"
-    private const val GITHUB_API_FALLBACK = "https://api.github.com/repos/txorav/pox-kernel-begonia/releases"
+    private const val GITHUB_API_BASE = "https://api.github.com/repos"
 
+    /**
+     * Releases of the repository chosen in Settings.
+     *
+     * There used to be a hardcoded primary/fallback pair; a silent fallback to
+     * a different repo made it impossible to tell where a release came from, so
+     * errors now surface against the configured repository instead.
+     */
     suspend fun fetchLatestReleases(): List<GithubRelease> = withContext(Dispatchers.IO) {
+        val repository = AppSettings.updaterRepository.value
         val releasesJson = try {
-            fetchUrl(GITHUB_API_PRIMARY)
-        } catch (_: Exception) {
-            fetchUrl(GITHUB_API_FALLBACK)
+            fetchUrl("$GITHUB_API_BASE/$repository/releases")
+        } catch (e: Exception) {
+            throw Exception("$repository: ${e.message}")
         }
         json.decodeFromString<List<GithubRelease>>(releasesJson)
     }

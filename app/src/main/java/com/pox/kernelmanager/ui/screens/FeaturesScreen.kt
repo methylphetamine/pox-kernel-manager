@@ -233,7 +233,7 @@ fun FeaturesScreen(
             // 4. Display, Touch & Vibrator
             SectionHeader(
                 title = "Display, Touch & Haptics",
-                subtitle = "Calibrated D65 display, wake gestures & tactile feedback"
+                subtitle = "Wake gestures & tactile feedback"
             )
 
             FeatureSwitchCard(
@@ -243,15 +243,6 @@ fun FeaturesScreen(
                 onCheckedChange = { viewModel.toggleDt2w(it) },
                 icon = Icons.Default.TouchApp,
                 enabled = uiState.features.isSupported(TuningFeature.DT2W)
-            )
-
-            FeatureSwitchCard(
-                title = "True Tone Liquid Retina D65",
-                description = "Calibrated D65 color balance reference profile for begonia LCD",
-                isChecked = uiState.features.trueToneDisplay,
-                onCheckedChange = { viewModel.toggleTrueTone(it) },
-                icon = Icons.Default.Palette,
-                enabled = uiState.features.isSupported(TuningFeature.TRUE_TONE)
             )
 
             FeatureSliderCard(

@@ -13,6 +13,15 @@ The official native companion Android application for the **Pox Kernel** (`POX-p
 * **Dual Compatibility (Rooted & Unrooted)**:
   * Seamlessly operates on both rooted devices (KernelSU-Next, APatch, Magisk) and clean unrooted ROMs.
   * Never hangs or crashes waiting for root prompts; persists tuning options in local `SharedPreferences` when root is not granted.
+* **Settings That Survive Reboots**:
+  * Every tuning choice is written to on-device app storage the moment it is made.
+  * A boot receiver + `JobScheduler` restore job (and a once-per-launch restore inside the app) replays the saved choices onto the kernel after a reboot or a force stop, so nothing silently resets.
+  * A **Re-apply saved tuning** action in Settings fires the same restore on demand.
+* **Quick Settings Tiles**:
+  * One tile per tuning action: Gaming mode (cycles Balanced → Gaming → Extreme), touch boost, bypass charging, thermal guard, xswapd, double tap to wake, dynamic fsync and memory reclaim.
+  * Tiles render from the saved state, so they are instant even while the root shell is busy.
+* **Appearance Options**:
+  * Material You (dynamic), System default, Light, or always-Dark, selected in Settings and persisted.
 * **Accurate Hardware & Battery Telemetry**:
   * Real-time battery percentage, voltage, battery temperature, and charging status via Android `BatteryManager`.
   * Live octa-core CPU frequency monitor (Helio G90T 2x Cortex-A76 + 6x Cortex-A55).
@@ -21,11 +30,11 @@ The official native companion Android application for the **Pox Kernel** (`POX-p
 * **Kernel Tuning & Power Governance**:
   * Unified `/proc/perfmgr/gaming_mode` controller (Balanced, Gaming, Extreme).
   * Direct-Power Bypass Charging mode to eliminate battery heating during heavy gaming.
-  * 240Hz Touch Gaming & Debounce driver toggles.
+  * FPSGO touch boost toggle. The old dead debounce node is gone; Gaming and Extreme modes enable the boost automatically.
   * HyperOS `xswapd` daemon toggle and on-demand 100MB force proactive memory reclamation.
   * Hardware thermal guard and charging stop threshold limiter.
 * **OTA Kernel Updater**:
-  * Queries official GitHub release matrix directly from `POX-project/pox-begonia-kernel`.
+  * Queries the GitHub release matrix of `POX-project/pox-begonia-kernel` - or any other repository you configure in Settings or right from the Updater screen.
   * One-tap download and SHA-256 verification of AnyKernel3 flash packages.
 * **Diagnostics & SELinux**:
   * Live kernel ring buffer (`dmesg`) viewer with search and log exporting.
@@ -37,7 +46,7 @@ The official native companion Android application for the **Pox Kernel** (`POX-p
 
 ### Prerequisites
 * JDK 17+
-* Android SDK (API 34 / Build Tools 34.0.0)
+* Android SDK (API 35 / Build Tools 35.0.0)
 
 ```bash
 git clone https://github.com/POX-project/pox-kernel-manager.git

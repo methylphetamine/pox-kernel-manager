@@ -15,7 +15,6 @@ enum class TuningFeature(val label: String, val unsupportedReason: String) {
     CHARGE_LIMIT("Charge limit", "Grant root - /proc/perfmgr/battery_limit is not writable"),
     THERMAL_GUARD("Thermal guard", "Grant root - /sys/kernel/battery_protection/thermal_guard is not writable"),
     DT2W("Double tap to wake", "Grant root - /proc/perfmgr/dt2w is not writable"),
-    TRUE_TONE("True Tone", "Grant root - /proc/perfmgr/true_tone is not writable"),
     VIBRATOR_STRENGTH("Vibrator strength", "Grant root - /proc/perfmgr/vibrator_strength is not writable"),
 
     // Present only on some ROMs or with a module installed.
@@ -52,7 +51,6 @@ data class TuningFeatures(
 
     // Hardware Touch & Display
     val doubleTapToWake: Boolean = false,
-    val trueToneDisplay: Boolean = false,
     val vibratorStrengthPercent: Int = 85,
 
     // Storage & I/O
