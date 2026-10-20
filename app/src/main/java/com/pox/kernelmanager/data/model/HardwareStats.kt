@@ -19,6 +19,7 @@ data class HardwareStats(
     val zramTotalMb: Long = 0,
     val zramUsedMb: Long = 0,
     val zramCompRatio: Float = 0f,
+    val zramWritebackMb: Long = 0,
     val batteryLevel: Int = 0,
     val batteryVoltageMv: Int = 0,
     val batteryCurrentMa: Int = 0,

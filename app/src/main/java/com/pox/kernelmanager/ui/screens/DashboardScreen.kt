@@ -255,7 +255,13 @@ fun DashboardScreen(
                     title = "RAM / ZRAM",
                     value = "${ramUsed / 1024}G / ${ramTotal / 1024}G",
                     icon = Icons.Default.Storage,
-                    subtitle = "ZRAM: ${uiState.stats.zramUsedMb}M (Ratio: ${String.format("%.2f", uiState.stats.zramCompRatio)}x)",
+                    subtitle = buildString {
+                        append("ZRAM: ${uiState.stats.zramUsedMb}M")
+                        append(" (Ratio: ${String.format("%.2f", uiState.stats.zramCompRatio)}x)")
+                        if (uiState.stats.zramWritebackMb > 0) {
+                            append(" • WB: ${uiState.stats.zramWritebackMb}M")
+                        }
+                    },
                     progress = ramUsed.toFloat() / ramTotal.toFloat(),
                     modifier = Modifier.weight(1f)
                 )

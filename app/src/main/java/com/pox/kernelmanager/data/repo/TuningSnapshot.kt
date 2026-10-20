@@ -24,5 +24,10 @@ data class TuningSnapshot(
     val readAheadKb: Int = 256,
     val ioScheduler: String? = null,
     val cpuGovernor: String? = null,
-    val zramSizeMb: Long? = null
+    val zramSizeMb: Long? = null,
+    val zramCompAlgorithm: String? = null,
+    val zramBackingEnabled: Boolean = false,
+    val zramBackingSizeMb: Long? = null,
+    val zramWritebackLimitMb: Long = 0,
+    val zramWritebackLimitEnabled: Boolean = false
 )
