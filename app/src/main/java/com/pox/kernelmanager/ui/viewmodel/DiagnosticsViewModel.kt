@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pox.kernelmanager.data.repo.DownloadsStore
 import com.pox.kernelmanager.data.root.KernelNodes
-import com.pox.kernelmanager.data.root.NodeStatus
+import com.pox.kernelmanager.data.root.ShellUtils.NodeStatus
 import com.pox.kernelmanager.data.root.ShellUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -100,7 +100,7 @@ class DiagnosticsViewModel : ViewModel() {
                     appendLine("\n[MOUNTS]\n$mounts")
                     appendLine("\n[DMESG]\n$dmesg")
                     appendLine("\n[KERNEL NODE REPORT]")
-                    rootEnv.nodeReport.forEach { node ->
+                    ShellUtils.nodeReport(KernelNodes.probedNodes()).forEach { node ->
                         appendLine(
                             "  ${if (node.exists) "PRESENT" else "ABSENT "} " +
                                 "rw=${node.writable} ${node.path} ${node.sample.orEmpty()}"

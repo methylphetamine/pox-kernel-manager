@@ -426,6 +426,8 @@ suspend fun nodeExists(path: String): Boolean = withContext(Dispatchers.IO) {
 }
 
     /** Single-quote a value for safe interpolation into a shell command. */
+    fun quote(value: String): String = shellQuote(value)
+
     private fun shellQuote(value: String): String = "'" + value.replace("'", "'\\''") + "'"
 
     /**
