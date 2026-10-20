@@ -22,5 +22,10 @@ data class DownloadCompleted(val file: File, val savedLocation: String) : Update
         /** True when the boot partition was written directly, false when staged for recovery. */
         val direct: Boolean = true
     ) : UpdateState
-    data class Error(val message: String) : UpdateState
+    /**
+     * [file] is kept when a verified repository download failed to install, so
+     * the user can still stage the same package for recovery instead of
+     * downloading it again.
+     */
+    data class Error(val message: String, val file: File? = null) : UpdateState
 }

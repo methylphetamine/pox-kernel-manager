@@ -311,6 +311,20 @@ fun UpdaterScreen(
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(text = state.message, color = MaterialTheme.colorScheme.onErrorContainer)
+                            state.file?.let { file ->
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "The verified package is still available in the app cache.",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                                TextButton(
+                                    onClick = { viewModel.stageDownloadedPackage(file) },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("Stage via recovery instead")
+                                }
+                            }
                         }
                     }
                 }

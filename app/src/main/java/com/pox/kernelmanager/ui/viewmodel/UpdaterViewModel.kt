@@ -137,7 +137,7 @@ class UpdaterViewModel : ViewModel() {
                     message = outcome.message,
                     direct = true
                 )
-                is KernelFlashOutcome.Failure -> UpdateState.Error(outcome.message)
+                is KernelFlashOutcome.Failure -> UpdateState.Error(outcome.message, file)
             }
         }
     }
@@ -155,7 +155,7 @@ class UpdaterViewModel : ViewModel() {
                     direct = false
                 )
             } catch (e: Exception) {
-                _updateState.value = UpdateState.Error("Flashing staging failed: ${e.message}")
+                _updateState.value = UpdateState.Error("Flashing staging failed: ${e.message}", file)
             }
         }
     }
