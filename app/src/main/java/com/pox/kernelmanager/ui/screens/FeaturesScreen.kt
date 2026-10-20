@@ -1,5 +1,6 @@
 package com.pox.kernelmanager.ui.screens
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,7 +17,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.pox.kernelmanager.data.model.TuningFeature
+import com.pox.kernelmanager.data.model.TuningFeatures
 import com.pox.kernelmanager.data.model.GamingModeLevel
+import com.pox.kernelmanager.data.model.ZramWritebackMode
 import com.pox.kernelmanager.ui.components.*
 import com.pox.kernelmanager.ui.viewmodel.FeaturesViewModel
 
@@ -265,10 +268,10 @@ fun FeaturesScreen(
                 enabled = uiState.features.isSupported(TuningFeature.VIBRATOR_STRENGTH)
             )
 
-            // 5. Storage & Filesystem
+            // 5. Storage, I/O scheduler & ZRAM
             SectionHeader(
-                title = "Storage & Dynamic Fsync",
-                subtitle = "Micro-stutter elimination & UFS flash scheduler"
+                title = "Storage, I/O Scheduler & ZRAM",
+                subtitle = "UFS queue tuning, compressed swap and disk writeback"
             )
 
             FeatureSwitchCard(
@@ -297,28 +300,38 @@ fun FeaturesScreen(
             if (uiState.features.availableSchedulers.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(10.dp))
                 Text(
-                    text = "I/O SCHEDULER",
+                    text = buildString {
+                        append("I/O SCHEDULER")
+                        if (uiState.features.schedulerQueue.isNotBlank()) {
+                            append(" - ")
+                            append(uiState.features.schedulerQueue)
+                        }
+                    },
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
                 Spacer(modifier = Modifier.height(6.dp))
-                SingleChoiceSegmentedButtonRow(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    uiState.features.availableSchedulers.forEachIndexed { index, scheduler ->
-                        SegmentedButton(
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    uiState.features.availableSchedulers.forEach { scheduler ->
+                        FilterChip(
                             selected = uiState.features.ioScheduler == scheduler,
                             onClick = { viewModel.setIoScheduler(scheduler) },
                             enabled = uiState.features.isSupported(TuningFeature.IO_SCHEDULER),
-                            shape = SegmentedButtonDefaults.itemShape(
-                                index = index,
-                                count = uiState.features.availableSchedulers.size
-                            )
-                        ) {
-                            Text(scheduler, style = MaterialTheme.typography.labelSmall)
-                        }
+                            label = {
+                                Text(scheduler, style = MaterialTheme.typography.labelSmall)
+                            }
+                        )
                     }
                 }
+                UnsupportedReason(uiState.features.reasonFor(TuningFeature.IO_SCHEDULER))
             }
 
             if (uiState.features.availableGovernors.isNotEmpty()) {
@@ -349,29 +362,285 @@ fun FeaturesScreen(
                 UnsupportedReason(uiState.features.reasonFor(TuningFeature.CPU_GOVERNOR))
             }
 
-            if (uiState.features.isSupported(TuningFeature.ZRAM_SIZE)) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "ZRAM BACKING SIZE",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    listOf(128L, 256L, 512L, 1024L, 2048L).forEach { size ->
-                        FilterChip(
-                            selected = uiState.features.zramSizeMb == size,
-                            onClick = { viewModel.setZramSizeMb(size) },
-                            label = { Text("${size}M", style = MaterialTheme.typography.labelSmall) },
-                            modifier = Modifier.padding(end = 6.dp)
-                        )
-                    }
-                }
-            }
+            ZramControlCard(
+                features = uiState.features,
+                onSizeSelected = { viewModel.setZramSizeMb(it) },
+                onBackingToggled = { viewModel.setZramBackingEnabled(it) },
+                onBackingSizeSelected = { viewModel.setZramBackingSizeMb(it) },
+                onCompressorSelected = { viewModel.setZramCompressor(it) },
+                onWritebackLimitSelected = { viewModel.setZramWritebackLimitMb(it) },
+                onWritebackLimitToggled = { viewModel.setZramWritebackLimitEnabled(it) },
+                onWriteback = { viewModel.triggerZramWriteback(it) }
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
+
+@Composable
+private fun ZramControlCard(
+    features: TuningFeatures,
+    onSizeSelected: (Long) -> Unit,
+    onBackingToggled: (Boolean) -> Unit,
+    onBackingSizeSelected: (Long) -> Unit,
+    onCompressorSelected: (String) -> Unit,
+    onWritebackLimitSelected: (Long) -> Unit,
+    onWritebackLimitToggled: (Boolean) -> Unit,
+    onWriteback: (ZramWritebackMode) -> Unit
+) {
+    val sizeSupported = features.isSupported(TuningFeature.ZRAM_SIZE)
+    val backingSupported = features.isSupported(TuningFeature.ZRAM_BACKING)
+    val writebackSupported = features.isSupported(TuningFeature.ZRAM_WRITEBACK)
+    val compressorSupported = features.isSupported(TuningFeature.ZRAM_COMPRESSOR)
+
+    val sizeOptions = listOf(128L, 256L, 512L, 1024L, 2048L, 3072L).let { defaults ->
+        if (features.zramSizeMb > 0 && features.zramSizeMb !in defaults) {
+            (defaults + features.zramSizeMb).sorted()
+        } else defaults
+    }
+    val backingSizeOptions = listOf(256L, 512L, 1024L, 2048L, 4096L).let { defaults ->
+        if (features.zramBackingSizeMb > 0 && features.zramBackingSizeMb !in defaults) {
+            (defaults + features.zramBackingSizeMb).sorted()
+        } else defaults
+    }
+    val limitOptions = listOf(128L, 256L, 512L, 1024L, 2048L).let { defaults ->
+        if (features.zramWritebackLimitMb > 0 && features.zramWritebackLimitMb !in defaults) {
+            (defaults + features.zramWritebackLimitMb).sorted()
+        } else defaults
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 5.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        )
+    ) {
+        Column(modifier = Modifier.padding(18.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "ZRAM compressed swap",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = if (features.zramSizeMb > 0) {
+                            buildString {
+                                append(formatZramMb(features.zramSizeMb))
+                                if (features.zramCompAlgorithm.isNotBlank()) {
+                                    append(" • ")
+                                    append(features.zramCompAlgorithm)
+                                }
+                                if (features.zramBackingEnabled) append(" • writeback")
+                            }
+                        } else {
+                            "Not configured"
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+                StatusBadge(
+                    text = if (features.zramSizeMb > 0) "Active" else "Off",
+                    isActive = features.zramSizeMb > 0
+                )
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+            Text(
+                text = "SWAP SIZE",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            ChipRow(
+                options = sizeOptions,
+                selected = features.zramSizeMb,
+                enabled = sizeSupported,
+                label = { formatZramMb(it) },
+                onSelected = onSizeSelected
+            )
+
+            if (!sizeSupported) {
+                UnsupportedReason(features.reasonFor(TuningFeature.ZRAM_SIZE))
+            } else {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 14.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Disk writeback backing",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "Moves idle and incompressible pages from RAM to a loop-backed file",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                    }
+                    Switch(
+                        checked = features.zramBackingEnabled,
+                        onCheckedChange = onBackingToggled,
+                        enabled = backingSupported && sizeSupported
+                    )
+                }
+
+                if (features.zramBackingEnabled) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = "BACKING FILE SIZE",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    ChipRow(
+                        options = backingSizeOptions,
+                        selected = features.zramBackingSizeMb,
+                        enabled = backingSupported,
+                        label = { formatZramMb(it) },
+                        onSelected = onBackingSizeSelected
+                    )
+                    if (features.zramBackingDevice.isNotBlank()) {
+                        Text(
+                            text = "Attached as ${features.zramBackingDevice.substringAfterLast('/')}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 6.dp)
+                        )
+                    }
+                }
+                UnsupportedReason(features.reasonFor(TuningFeature.ZRAM_BACKING))
+
+                if (features.availableZramAlgorithms.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "COMPRESSOR",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    ChipRow(
+                        options = features.availableZramAlgorithms,
+                        selected = features.zramCompAlgorithm,
+                        enabled = compressorSupported,
+                        label = { it },
+                        onSelected = onCompressorSelected
+                    )
+                }
+                UnsupportedReason(features.reasonFor(TuningFeature.ZRAM_COMPRESSOR))
+
+                if (features.zramBackingEnabled) {
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 14.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Writeback budget",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Caps how much data may be written to the backing file",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 2.dp)
+                            )
+                        }
+                        Switch(
+                            checked = features.zramWritebackLimitEnabled,
+                            onCheckedChange = onWritebackLimitToggled,
+                            enabled = writebackSupported
+                        )
+                    }
+
+                    if (features.zramWritebackLimitEnabled) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        ChipRow(
+                            options = limitOptions,
+                            selected = features.zramWritebackLimitMb,
+                            enabled = writebackSupported,
+                            label = { formatZramMb(it) },
+                            onSelected = onWritebackLimitSelected
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilledTonalButton(
+                            onClick = { onWriteback(ZramWritebackMode.IDLE) },
+                            enabled = writebackSupported,
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("Write back idle")
+                        }
+                        OutlinedButton(
+                            onClick = { onWriteback(ZramWritebackMode.HUGE) },
+                            enabled = writebackSupported,
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("Write back huge")
+                        }
+                    }
+                    Text(
+                        text = "${formatZramMb(features.zramWritebackMb)} written to backing",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                    UnsupportedReason(features.reasonFor(TuningFeature.ZRAM_WRITEBACK))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun <T> ChipRow(
+    options: List<T>,
+    selected: T,
+    enabled: Boolean,
+    label: (T) -> String,
+    onSelected: (T) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        options.forEach { option ->
+            FilterChip(
+                selected = selected == option,
+                onClick = { onSelected(option) },
+                enabled = enabled,
+                label = { Text(label(option), style = MaterialTheme.typography.labelSmall) }
+            )
+        }
+    }
+}
+
+private fun formatZramMb(mb: Long): String =
+    if (mb >= 1024) String.format("%.1f GB", mb / 1024f) else "$mb MB"

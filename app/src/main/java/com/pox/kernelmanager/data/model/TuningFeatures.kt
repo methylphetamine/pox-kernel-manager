@@ -27,7 +27,25 @@ enum class TuningFeature(val label: String, val unsupportedReason: String) {
     READ_AHEAD("Read-ahead", "No writable block queue found under /sys/block"),
     IO_SCHEDULER("I/O scheduler", "No writable queue scheduler found under /sys/block"),
     CPU_GOVERNOR("CPU governor", "No writable cpufreq governor found"),
-    ZRAM_SIZE("ZRAM size", "/sys/block/zram0/disksize is not writable")
+    ZRAM_SIZE("ZRAM size", "/sys/block/zram0/disksize is not writable"),
+    ZRAM_BACKING(
+        "ZRAM backing store",
+        "Kernel was built without CONFIG_ZRAM_WRITEBACK, or /sys/block/zram0/backing_dev is missing"
+    ),
+    ZRAM_WRITEBACK(
+        "ZRAM writeback",
+        "Kernel does not expose /sys/block/zram0/{idle,writeback}"
+    ),
+    ZRAM_COMPRESSOR(
+        "ZRAM compressor",
+        "/sys/block/zram0/comp_algorithm is not writable"
+    )
+}
+
+/** Kernel writeback modes exposed by the Linux 4.14 zram driver. */
+enum class ZramWritebackMode(val kernelValue: String, val label: String) {
+    IDLE("idle", "idle pages"),
+    HUGE("huge", "incompressible pages")
 }
 
 enum class GamingModeLevel(val value: Int, val title: String, val description: String) {
@@ -60,9 +78,9 @@ data class TuningFeatures(
     val dynamicFsync: Boolean = false,
     val readAheadKb: Int = 256,
 
-    // begonia builds CONFIG_DEFAULT_IOSCHED="noop" and compiles noop, deadline,
-    // cfq and the mq variants kyber/deadline, so "mq-deadline" is not selectable.
-    // Both lists are read back from the kernel rather than assumed.
+    // begonia uses blk-mq on UFS; the queue advertises none, mq-deadline,
+    // kyber and (with CONFIG_IOSCHED_BFQ) bfq. The list is read back from the
+    // physical queue rather than hardcoded, because editions can differ.
     val ioScheduler: String = "",
     val availableSchedulers: List<String> = emptyList(),
 
@@ -71,6 +89,22 @@ data class TuningFeatures(
     val availableGovernors: List<String> = emptyList(),
 
     val zramSizeMb: Long = 0,
+    val zramCompAlgorithm: String = "",
+    val availableZramAlgorithms: List<String> = emptyList(),
+
+    // zram writeback (`CONFIG_ZRAM_WRITEBACK`). The kernel only accepts a block
+    // device, so [zramBackingDevice] is normally a loop device created by the
+    // manager on top of [com.pox.kernelmanager.data.root.KernelNodes.ZRAM_BACKING_FILE].
+    val zramBackingEnabled: Boolean = false,
+    val zramBackingSizeMb: Long = 0,
+    val zramBackingDevice: String = "",
+    val zramWritebackLimitMb: Long = 0,
+    val zramWritebackLimitEnabled: Boolean = false,
+    /** Data written to the backing device, from `bd_stat`'s third column. */
+    val zramWritebackMb: Long = 0,
+
+    /** Physical queue whose scheduler is shown in the picker, e.g. `sda`. */
+    val schedulerQueue: String = "",
 
     /**
      * Whether this app holds an active root shell.
