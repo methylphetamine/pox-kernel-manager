@@ -234,7 +234,8 @@ fun FlashScreen(
                 Button(
                     onClick = { viewModel.flash() },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = state.zip != null && !state.isFlashing && !state.isImporting,
+                    enabled = state.zip != null && state.rootGranted &&
+                        !state.isFlashing && !state.isImporting,
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     if (state.isFlashing) {
@@ -352,7 +353,10 @@ fun FlashScreen(
                             )
                             if (outcome.bootRestored != true && state.lastBackupPath != null) {
                                 Spacer(modifier = Modifier.height(10.dp))
-                                TextButton(onClick = { viewModel.restoreLastBackup() }) {
+                                TextButton(
+                                    onClick = { viewModel.restoreLastBackup() },
+                                    enabled = state.rootGranted
+                                ) {
                                     Icon(Icons.Default.Restore, contentDescription = null)
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text("Restore last boot backup")
@@ -390,7 +394,7 @@ fun FlashScreen(
                         Spacer(modifier = Modifier.height(8.dp))
                         OutlinedButton(
                             onClick = { viewModel.restoreLastBackup() },
-                            enabled = !state.isFlashing && !state.isImporting,
+                            enabled = state.rootGranted && !state.isFlashing && !state.isImporting,
                             shape = RoundedCornerShape(14.dp)
                         ) {
                             Icon(Icons.Default.Restore, contentDescription = null)

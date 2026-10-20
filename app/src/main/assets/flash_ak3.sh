@@ -36,7 +36,10 @@ else
     MOUNTED=0
 fi
 
+# update-binary only uses this path when AKHOME is exported; otherwise it
+# falls back to /tmp/anykernel, which does not exist on a booted Android system.
 AKHOME="$TMP/anykernel"
+export AKHOME
 "$BB" ash "$F/update-binary" 3 1 "$Z"
 RC=$?
 

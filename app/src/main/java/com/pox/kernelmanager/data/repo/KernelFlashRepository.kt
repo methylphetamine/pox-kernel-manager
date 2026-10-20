@@ -105,7 +105,7 @@ object KernelFlashRepository {
 
                 val properties = zip.getInputStream(anyKernel).bufferedReader().use { it.readText() }
                 val devices = DEVICE_LINE.findAll(properties)
-                    .map { it.groupValues[1].trim() }
+                    .map { it.groupValues[1].trim().trim('"', '\'') }
                     .filter { it.isNotEmpty() }
                     .distinct()
                     .toList()
@@ -194,10 +194,11 @@ object KernelFlashRepository {
             onLog("Boot backup: ${backup.path}")
 
             onStep("Running the AnyKernel3 installer...")
+            // flash_ak3.sh takes the workspace and ZIP as positional arguments.
             val command = buildString {
-                append("F=").append(shellQuote(work.absolutePath))
-                append(" Z=").append(shellQuote(payload.absolutePath))
-                append(" /system/bin/sh ").append(shellQuote(script.absolutePath))
+                append("/system/bin/sh ").append(shellQuote(script.absolutePath))
+                append(" ").append(shellQuote(work.absolutePath))
+                append(" ").append(shellQuote(payload.absolutePath))
             }
             val result = ShellUtils.runCommandStreaming(command) { line ->
                 onLog(line)
@@ -261,7 +262,9 @@ object KernelFlashRepository {
         val backupPath = AppSettings.lastBootBackup.value
             ?: return@withContext KernelFlashOutcome.Failure("No boot backup has been recorded yet.")
 
-        if (!File(backupPath).isFile) {
+        // /data/local/tmp is not readable by the app UID on most ROMs, so the
+        // existence check has to run through the root shell.
+        if (!ShellUtils.runCommand("test -s ${shellQuote(backupPath)}").isSuccess) {
             return@withContext KernelFlashOutcome.Failure(
                 "The recorded boot backup is missing: $backupPath"
             )
