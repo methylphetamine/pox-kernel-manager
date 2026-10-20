@@ -4,10 +4,14 @@ import android.os.SystemClock
 import com.pox.kernelmanager.data.model.RootProvider
 import com.topjohnwu.superuser.Shell
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.Collections
 
 data class ShellResult(
     val isSuccess: Boolean,
@@ -340,6 +344,76 @@ object ShellUtils {
                 exitCode = -1
             )
         }
+    }
+
+    /**
+     * Run a long-running root command and stream every output line as it arrives.
+     *
+     * libsu appends to the supplied lists while the job is still running, so a
+     * small polling loop lets the flasher show install progress instead of a
+     * silent spinner. STDOUT and STDERR share one list: AnyKernel3 prints its
+     * useful diagnostics on both streams.
+     */
+    suspend fun runCommandStreaming(
+        command: String,
+        onLine: (String) -> Unit
+    ): ShellResult = withContext(Dispatchers.IO) {
+        if (!isRootAvailable()) {
+            return@withContext ShellResult(
+                isSuccess = false,
+                output = listOf("Root access is not available"),
+                exitCode = -1
+            )
+        }
+
+        try {
+            val output = Collections.synchronizedList(mutableListOf<String>())
+            val shell = Shell.getShell()
+            if (!shell.isRoot) {
+                return@withContext ShellResult(
+                    isSuccess = false,
+                    output = listOf("Root access was not granted"),
+                    exitCode = -1
+                )
+            }
+
+            val job = shell.newJob().add(command).to(output, output)
+            coroutineScope {
+                val running = async(Dispatchers.IO) { job.exec() }
+                var emitted = 0
+                while (!running.isCompleted) {
+                    emitted = drainOutput(output, emitted, onLine)
+                    delay(80)
+                }
+                emitted = drainOutput(output, emitted, onLine)
+                val result = running.await()
+                ShellResult(
+                    isSuccess = result.isSuccess,
+                    output = synchronized(output) { output.toList() },
+                    exitCode = result.code
+                )
+            }
+        } catch (e: Exception) {
+            ShellResult(
+                isSuccess = false,
+                output = listOf(e.message ?: "Execution failed"),
+                exitCode = -1
+            )
+        }
+    }
+
+    private fun drainOutput(
+        lines: MutableList<String>,
+        start: Int,
+        onLine: (String) -> Unit
+    ): Int {
+        val snapshot = synchronized(lines) { lines.toList() }
+        var index = start
+        while (index < snapshot.size) {
+            runCatching { onLine(snapshot[index]) }
+            index++
+        }
+        return index
     }
 
     suspend fun fastRead(path: String): String? = withContext(Dispatchers.IO) {

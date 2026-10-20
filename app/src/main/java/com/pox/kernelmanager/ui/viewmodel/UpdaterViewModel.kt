@@ -4,11 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pox.kernelmanager.PoxApplication
 import com.pox.kernelmanager.data.model.GithubRelease
+import com.pox.kernelmanager.data.model.KernelFlashOutcome
 import com.pox.kernelmanager.data.model.KernelPackageItem
 import com.pox.kernelmanager.data.model.UpdateState
 import com.pox.kernelmanager.data.repo.DownloadsStore
 import com.pox.kernelmanager.data.repo.HardwareRepository
+import com.pox.kernelmanager.data.repo.KernelFlashRepository
 import com.pox.kernelmanager.data.repo.KernelUpdateRepository
+import com.pox.kernelmanager.data.root.ShellUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -114,7 +117,33 @@ class UpdaterViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Write the package to the boot partition directly, backing up the current
+     * boot image first. This is the same AnyKernel3 flow used by the Flash tab;
+     * it avoids a detour through recovery on devices with working root.
+     */
     fun flashDownloadedPackage(file: File) {
+        viewModelScope.launch {
+            _updateState.value = UpdateState.Flashing("Preparing the downloaded package...")
+            val outcome = KernelFlashRepository.flashZip(
+                context = PoxApplication.instance,
+                zipFile = file,
+                onStep = { step ->
+                    _updateState.value = UpdateState.Flashing(step)
+                }
+            )
+            _updateState.value = when (outcome) {
+                is KernelFlashOutcome.Success -> UpdateState.FlashSuccess(
+                    message = outcome.message,
+                    direct = true
+                )
+                is KernelFlashOutcome.Failure -> UpdateState.Error(outcome.message)
+            }
+        }
+    }
+
+    /** Fallback for devices where the direct boot write is not appropriate. */
+    fun stageDownloadedPackage(file: File) {
         viewModelScope.launch {
             try {
                 _updateState.value = UpdateState.Flashing("Starting staging...")
@@ -122,7 +151,8 @@ class UpdaterViewModel : ViewModel() {
                     _updateState.value = UpdateState.Flashing(step)
                 }
                 _updateState.value = UpdateState.FlashSuccess(
-                    "Kernel package staged to /cache/recovery/openrecoveryscript. Reboot to recovery to install."
+                    message = "Kernel package staged to /cache/recovery/openrecoveryscript. Reboot to recovery to install.",
+                    direct = false
                 )
             } catch (e: Exception) {
                 _updateState.value = UpdateState.Error("Flashing staging failed: ${e.message}")
@@ -133,6 +163,12 @@ class UpdaterViewModel : ViewModel() {
     fun rebootToRecovery() {
         viewModelScope.launch {
             KernelUpdateRepository.rebootToRecovery()
+        }
+    }
+
+    fun rebootToSystem() {
+        viewModelScope.launch {
+            ShellUtils.runCommand("reboot")
         }
     }
 

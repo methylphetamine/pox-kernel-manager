@@ -36,6 +36,11 @@ The official native companion Android application for the **Pox Kernel** (`POX-p
 * **OTA Kernel Updater**:
   * Queries the GitHub release matrix of `POX-project/pox-begonia-kernel` - or any other repository you configure in Settings or right from the Updater screen.
   * One-tap download and SHA-256 verification of AnyKernel3 flash packages.
+* **Direct Kernel ZIP Flasher**:
+  * Flash a local AnyKernel3 ZIP without rebooting to recovery, using the package's own installer under root.
+  * Validates `anykernel.sh`, `update-binary`, and `tools/busybox` before touching the boot partition.
+  * Backs up and hashes the current boot image first; restores it automatically if the installer fails or the partition does not change.
+  * Streams the AnyKernel3 installer log in the app and offers a one-tap reboot when the flash succeeds.
 * **Diagnostics & SELinux**:
   * Live kernel ring buffer (`dmesg`) viewer with search and log exporting.
   * One-tap complete hardware report generation to `/sdcard/Download/`.

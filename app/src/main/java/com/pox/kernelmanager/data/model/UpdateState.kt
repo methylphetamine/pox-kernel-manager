@@ -17,6 +17,10 @@ sealed interface UpdateState {
     /** [file] stays in app cache for flashing; [savedLocation] is where it was published. */
 data class DownloadCompleted(val file: File, val savedLocation: String) : UpdateState
     data class Flashing(val currentStep: String) : UpdateState
-    data class FlashSuccess(val message: String) : UpdateState
+    data class FlashSuccess(
+        val message: String,
+        /** True when the boot partition was written directly, false when staged for recovery. */
+        val direct: Boolean = true
+    ) : UpdateState
     data class Error(val message: String) : UpdateState
 }

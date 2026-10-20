@@ -55,6 +55,7 @@ object AppSettings {
     private const val PREFS_NAME = "pox_app_settings"
     private const val KEY_THEME_MODE = "theme_mode"
     private const val KEY_UPDATER_REPOSITORY = "updater_repository"
+    private const val KEY_LAST_BOOT_BACKUP = "last_boot_backup"
 
     const val DEFAULT_UPDATER_REPOSITORY = "POX-project/pox-begonia-kernel"
 
@@ -81,6 +82,16 @@ object AppSettings {
     )
     val updaterRepository: StateFlow<String> = _updaterRepository.asStateFlow()
 
+    /**
+     * Most recent boot-partition backup made by the direct ZIP flasher.
+     *
+     * The path lives under /data/local/tmp because that is one of the few
+     * locations a root shell can write and read consistently across ROMs.
+     * It survives a reboot, but not a factory reset.
+     */
+    private val _lastBootBackup = MutableStateFlow(prefs.getString(KEY_LAST_BOOT_BACKUP, null))
+    val lastBootBackup: StateFlow<String?> = _lastBootBackup.asStateFlow()
+
     fun setThemeMode(mode: ThemeMode) {
         prefs.edit().putString(KEY_THEME_MODE, mode.id).commit()
         _themeMode.value = mode
@@ -92,6 +103,12 @@ object AppSettings {
         prefs.edit().putString(KEY_UPDATER_REPOSITORY, normalized).commit()
         _updaterRepository.value = normalized
         return true
+    }
+
+    /** Records the boot image saved immediately before a kernel flash. */
+    fun setLastBootBackup(path: String?) {
+        prefs.edit().putString(KEY_LAST_BOOT_BACKUP, path).commit()
+        _lastBootBackup.value = path
     }
 
     /**

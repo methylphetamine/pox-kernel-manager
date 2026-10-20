@@ -218,12 +218,24 @@ fun UpdaterScreen(
                             Spacer(modifier = Modifier.height(14.dp))
                             Button(
                                 onClick = { viewModel.flashDownloadedPackage(state.file) },
-                                shape = RoundedCornerShape(12.dp)
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.fillMaxWidth()
                             ) {
                                 Icon(Icons.Default.FlashOn, contentDescription = null)
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Stage & Install via OpenRecovery")
+                                Text("Flash Now (root)")
                             }
+                            TextButton(
+                                onClick = { viewModel.stageDownloadedPackage(state.file) },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Stage via recovery instead")
+                            }
+                            Text(
+                                text = "A boot-partition backup is created before the direct flash.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
                         }
                     }
                 }
@@ -256,7 +268,7 @@ fun UpdaterScreen(
                     ) {
                         Column(modifier = Modifier.padding(20.dp)) {
                             Text(
-                                text = "Ready to Install!",
+                                text = if (state.direct) "Kernel Flashed!" else "Ready to Install!",
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
@@ -269,13 +281,15 @@ fun UpdaterScreen(
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(
-                                onClick = { viewModel.rebootToRecovery() },
+                                onClick = {
+                                    if (state.direct) viewModel.rebootToSystem() else viewModel.rebootToRecovery()
+                                },
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Icon(Icons.Default.RestartAlt, contentDescription = null)
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Reboot to Recovery Now")
+                                Text(if (state.direct) "Reboot Now" else "Reboot to Recovery Now")
                             }
                         }
                     }
