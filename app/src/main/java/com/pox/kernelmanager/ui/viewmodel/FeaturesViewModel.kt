@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.pox.kernelmanager.data.model.GamingModeLevel
 import com.pox.kernelmanager.data.model.TuningFeature
 import com.pox.kernelmanager.data.model.TuningFeatures
+import com.pox.kernelmanager.data.model.ZramWritebackMode
 import com.pox.kernelmanager.data.repo.TuningRepository
 import com.pox.kernelmanager.data.root.ShellUtils
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -76,6 +77,19 @@ fun setIoScheduler(scheduler: String) = apply { TuningRepository.setIoScheduler(
 fun setCpuGovernor(governor: String) = apply { TuningRepository.setCpuGovernor(governor) }
 
 fun setZramSizeMb(sizeMb: Long) = apply { TuningRepository.setZramSizeMb(sizeMb) }
+
+fun setZramBackingEnabled(enabled: Boolean) = apply { TuningRepository.setZramBackingEnabled(enabled) }
+
+fun setZramBackingSizeMb(sizeMb: Long) = apply { TuningRepository.setZramBackingSizeMb(sizeMb) }
+
+fun setZramCompressor(algorithm: String) = apply { TuningRepository.setZramCompressor(algorithm) }
+
+fun setZramWritebackLimitMb(limitMb: Long) = apply { TuningRepository.setZramWritebackLimitMb(limitMb) }
+
+fun setZramWritebackLimitEnabled(enabled: Boolean) =
+    apply { TuningRepository.setZramWritebackLimitEnabled(enabled) }
+
+fun triggerZramWriteback(mode: ZramWritebackMode) = apply { TuningRepository.triggerZramWriteback(mode) }
 
     fun toggleBypassCharging(enable: Boolean) = apply { TuningRepository.setBypassCharging(enable) }
 

@@ -130,6 +130,14 @@ object HardwareRepository {
         val zramRatio = if (zramUsed > 0) zramOrig.toFloat() / zramUsed.toFloat() else 1.0f
         val zramOrigMb = zramOrig / (1024 * 1024)
         val zramUsedMb = zramUsed / (1024 * 1024)
+        // bd_stat's third column is bytes written to the writeback device, in
+        // 4KB units. 256 units = 1MB.
+        val zramWritebackMb = ShellUtils.fastRead("/sys/block/zram0/bd_stat")
+            ?.trim()
+            ?.split(Regex("\\s+"))
+            ?.getOrNull(2)
+            ?.toLongOrNull()
+            ?.div(256) ?: 0L
 
         // 4. Battery & Power Telemetry (Accurate Android BatteryManager + Intent + sysfs)
         var batCapacity = 78
@@ -216,6 +224,7 @@ object HardwareRepository {
             zramTotalMb = zramDisksize,
             zramUsedMb = zramUsedMb,
             zramCompRatio = zramRatio,
+            zramWritebackMb = zramWritebackMb,
             batteryLevel = batCapacity,
             batteryVoltageMv = batVoltageMv,
             batteryCurrentMa = batCurrentMa,
