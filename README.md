@@ -33,6 +33,12 @@ The official native companion Android application for the **Pox Kernel** (`POX-p
   * FPSGO touch boost toggle. The old dead debounce node is gone; Gaming and Extreme modes enable the boost automatically.
   * HyperOS `xswapd` daemon toggle and on-demand 100MB force proactive memory reclamation.
   * Hardware thermal guard and charging stop threshold limiter.
+* **ZRAM & Storage Tuning**:
+  * Resize the compressed swap device safely: the app performs the required `swapoff` -> `reset` -> `disksize` -> `mkswap` -> `swapon` sequence instead of writing to a busy node.
+  * Select the zram compressor from the algorithms the kernel actually advertises (LZ4, LZO, LZ4HC, ZSTD, deflate).
+  * **ZRAM disk writeback**: create a sparse backing file on `/data`, attach it to a free loop device, and hand that block device to `CONFIG_ZRAM_WRITEBACK`.
+  * Mark idle pages and write back idle or incompressible pages on demand, with an optional writeback budget and live `bd_stat` accounting.
+  * I/O scheduler picker reads the physical UFS queue (not zram/loop), supports `none`, `mq-deadline`, `kyber` and `bfq`, and skips queues that do not advertise the selection instead of reporting a false failure.
 * **OTA Kernel Updater**:
   * Queries the GitHub release matrix of `POX-project/pox-begonia-kernel` - or any other repository you configure in Settings or right from the Updater screen.
   * One-tap download and SHA-256 verification of AnyKernel3 flash packages.

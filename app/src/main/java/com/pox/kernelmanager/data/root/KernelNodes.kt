@@ -120,8 +120,37 @@ object KernelNodes {
      */
     const val ZRAM_MM_STAT = "/sys/block/zram0/mm_stat"
 
-    const val ZRAM_DISKSIZE = "/sys/block/zram0/disksize"
-    const val ZRAM_COMP_ALGORITHM = "/sys/block/zram0/comp_algorithm"
+    const val ZRAM_BASE = "/sys/block/zram0"
+    const val ZRAM_DEVICE = "/dev/zram0"
+
+    const val ZRAM_DISKSIZE = "$ZRAM_BASE/disksize"
+    const val ZRAM_COMP_ALGORITHM = "$ZRAM_BASE/comp_algorithm"
+    const val ZRAM_INITSTATE = "$ZRAM_BASE/initstate"
+    const val ZRAM_RESET = "$ZRAM_BASE/reset"
+
+    /**
+     * zram writeback interface (`CONFIG_ZRAM_WRITEBACK`).
+     *
+     * This kernel is Linux 4.14, whose zram driver accepts a *block device* in
+     * [ZRAM_BACKING_DEV], not an arbitrary file. The manager therefore creates a
+     * sparse file, attaches it to a loop device, and hands that loop device to
+     * the kernel.
+     */
+    const val ZRAM_BACKING_DEV = "$ZRAM_BASE/backing_dev"
+    const val ZRAM_WRITEBACK = "$ZRAM_BASE/writeback"
+    const val ZRAM_IDLE = "$ZRAM_BASE/idle"
+    const val ZRAM_WRITEBACK_LIMIT = "$ZRAM_BASE/writeback_limit"
+    const val ZRAM_WRITEBACK_LIMIT_ENABLE = "$ZRAM_BASE/writeback_limit_enable"
+    const val ZRAM_BD_STAT = "$ZRAM_BASE/bd_stat"
+
+    /**
+     * Sparse file backing the zram writeback loop device.
+     *
+     * `/data/local/tmp` is available on every Android release and survives app
+     * updates. The file is only ever opened by the kernel through the loop
+     * device, so it does not need to live in the app sandbox.
+     */
+    const val ZRAM_BACKING_FILE = "/data/local/tmp/pox-zram-backing.img"
 
     /** Generic block queue attributes; the queue name must be discovered. */
     const val SYS_BLOCK = "/sys/block"
@@ -142,6 +171,26 @@ object KernelNodes {
         val result = ShellUtils.runCommand("ls /sys/block 2>/dev/null")
         if (!result.isSuccess) return emptyList()
         return result.output.map { it.trim() }.filter { it.isNotEmpty() }.map { "/sys/block/$it" }
+    }
+
+    /**
+     * Queues that represent real storage (UFS/eMMC/SD), not virtual devices.
+     *
+     * Writing an I/O scheduler to `zram0` or `loop0` is pointless: those queues
+     * only ever advertise `none`, and including them in the option list made the
+     * UI show a scheduler that was not actually selectable on the UFS queue.
+     */
+    suspend fun storageDevices(): List<String> {
+        val result = ShellUtils.runCommand("ls /sys/block 2>/dev/null")
+        if (!result.isSuccess) return emptyList()
+        return result.output
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .filterNot { name ->
+                name.startsWith("zram") || name.startsWith("loop") ||
+                    name.startsWith("ram") || name.startsWith("dm-")
+            }
+            .map { "/sys/block/$it" }
     }
 
     /** CPUs that expose a cpufreq policy, e.g. `["cpu0", "cpu6", ...]`. */
@@ -195,8 +244,15 @@ object KernelNodes {
         PERF_IOCTL,
         "/proc/perfmgr/profile",
         "/dev/memcg/memory.xswapd.enable",
-        "/sys/block/zram0/disksize",
-        "/sys/block/zram0/mm_stat"
+        ZRAM_DISKSIZE,
+        ZRAM_MM_STAT,
+        ZRAM_BACKING_DEV,
+        ZRAM_WRITEBACK,
+        ZRAM_IDLE,
+        ZRAM_WRITEBACK_LIMIT,
+        ZRAM_WRITEBACK_LIMIT_ENABLE,
+        ZRAM_BD_STAT,
+        ZRAM_COMP_ALGORITHM
     )
 
     /**
@@ -260,12 +316,23 @@ object KernelNodes {
         val vibrator = writable(VIBRATOR_STRENGTH_PROC) || writable(VIBRATOR_VMAX)
 
         var blockQueue: String? = null
-        for (queue in blockDevices()) {
+        for (queue in storageDevices()) {
             if (writable("$queue/queue/read_ahead_kb")) {
                 blockQueue = queue
                 break
             }
         }
+
+        val zramSize = writable(ZRAM_DISKSIZE)
+        // The 4.14 driver needs a block device, so the manager needs a loop
+        // helper as well as the sysfs nodes.
+        val loopTool = ShellUtils.runCommand(
+            "command -v losetup >/dev/null 2>&1 || command -v busybox >/dev/null 2>&1"
+        ).isSuccess
+        val zramBacking = loopTool &&
+            writable(ZRAM_BACKING_DEV) && writable(ZRAM_WRITEBACK)
+        val zramWriteback = zramBacking && writable(ZRAM_IDLE)
+        val zramCompressor = writable(ZRAM_COMP_ALGORITHM)
 
         var cpuPolicy: String? = null
         for (policy in cpufreqPolicies()) {
@@ -291,7 +358,10 @@ object KernelNodes {
             TuningFeature.READ_AHEAD to (blockQueue != null),
             TuningFeature.IO_SCHEDULER to (blockQueue != null),
             TuningFeature.CPU_GOVERNOR to (cpuPolicy != null),
-            TuningFeature.ZRAM_SIZE to writable("/sys/block/zram0/disksize")
+            TuningFeature.ZRAM_SIZE to zramSize,
+            TuningFeature.ZRAM_BACKING to zramBacking,
+            TuningFeature.ZRAM_WRITEBACK to zramWriteback,
+            TuningFeature.ZRAM_COMPRESSOR to zramCompressor
         )
     }
 
