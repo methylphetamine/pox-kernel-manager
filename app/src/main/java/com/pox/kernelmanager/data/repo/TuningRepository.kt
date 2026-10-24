@@ -32,6 +32,7 @@ object TuningRepository {
     private const val KEY_GAMING_MODE = "gaming_mode"
     private const val KEY_TOUCH_BOOST = "touch_boost"
     private const val KEY_BYPASS_CHARGING = "bypass_charging"
+    private const val KEY_FAST_CHARGE = "fast_charge"
     private const val KEY_CHARGE_LIMIT = "charge_limit"
     private const val KEY_THERMAL_GUARD = "thermal_guard"
     private const val KEY_TEMP_LIMIT = "temp_limit"
@@ -120,6 +121,10 @@ object TuningRepository {
             ShellUtils.fastRead(KernelNodes.BATTERY_BYPASS_SYS) == "1" ||
             ShellUtils.fastRead(KernelNodes.BATTERY_CHARGING_ENABLED) == "0"
         } else prefs.getBoolean(KEY_BYPASS_CHARGING, false)
+
+        val fastCharge = if (isRoot && isSupported(TuningFeature.FAST_CHARGE)) {
+            ShellUtils.fastRead(KernelNodes.FAST_CHARGE_PROC) == "1"
+        } else prefs.getBoolean(KEY_FAST_CHARGE, true)
 
         val chargeLimit = if (isRoot && isSupported(TuningFeature.CHARGE_LIMIT)) {
             ShellUtils.fastRead(KernelNodes.BATTERY_LIMIT_PROC)?.toIntOrNull()
@@ -222,6 +227,7 @@ object TuningRepository {
             gamingMode = gamingLevel,
             touchBoost240Hz = touchBoost,
             bypassCharging = bypass,
+            fastChargeEnabled = fastCharge,
             chargeLimitPercent = chargeLimit,
             thermalGuardEnabled = thermalGuard,
             tempLimitC = tempLimit,
@@ -306,6 +312,7 @@ object TuningRepository {
         gamingMode = gamingLevelOf(prefs.getInt(KEY_GAMING_MODE, 0)),
         touchBoost = prefs.getBoolean(KEY_TOUCH_BOOST, false),
         bypassCharging = prefs.getBoolean(KEY_BYPASS_CHARGING, false),
+        fastChargeEnabled = prefs.getBoolean(KEY_FAST_CHARGE, true),
         chargeLimitPercent = prefs.getInt(KEY_CHARGE_LIMIT, 100),
         thermalGuard = prefs.getBoolean(KEY_THERMAL_GUARD, false),
         tempLimitC = prefs.getInt(KEY_TEMP_LIMIT, 48),
@@ -354,6 +361,7 @@ object TuningRepository {
         step(setGamingMode(saved.gamingMode))
         step(setTouchBoost(saved.touchBoost))
         step(setBypassCharging(saved.bypassCharging))
+        step(setFastCharge(saved.fastChargeEnabled))
         step(setChargeLimit(saved.chargeLimitPercent))
         step(setThermalGuard(saved.thermalGuard, saved.tempLimitC))
         step(setXswapdEnabled(saved.xswapdEnabled))
@@ -536,6 +544,16 @@ object TuningRepository {
             KernelNodes.BATTERY_BYPASS_PROC to if (enable) "1" else "0",
             KernelNodes.BATTERY_BYPASS_SYS to if (enable) "1" else "0",
             KernelNodes.BATTERY_CHARGING_ENABLED to if (enable) "0" else "1"
+        )
+    }
+
+    suspend fun setFastCharge(enable: Boolean): TuningApplyResult = withContext(Dispatchers.IO) {
+        persist { putBoolean(KEY_FAST_CHARGE, enable) }
+        if (!ShellUtils.isRootAvailable()) return@withContext notApplied("Fast charge")
+        if (!isSupported(TuningFeature.FAST_CHARGE)) return@withContext unsupported(TuningFeature.FAST_CHARGE)
+        applyKernelWrites(
+            successLabel = if (enable) "18W fast charge enabled" else "Fast charge disabled (slower, safer on PC USB)",
+            KernelNodes.FAST_CHARGE_PROC to if (enable) "1" else "0"
         )
     }
 

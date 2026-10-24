@@ -97,6 +97,8 @@ fun triggerZramWriteback(mode: ZramWritebackMode) = apply { TuningRepository.tri
 
     fun toggleBypassCharging(enable: Boolean) = apply { TuningRepository.setBypassCharging(enable) }
 
+    fun toggleFastCharge(enable: Boolean) = apply { TuningRepository.setFastCharge(enable) }
+
     fun setChargeLimit(limitPercent: Int) = apply { TuningRepository.setChargeLimit(limitPercent) }
 
     fun toggleThermalGuard(enable: Boolean, tempLimit: Int) =

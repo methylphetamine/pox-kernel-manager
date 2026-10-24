@@ -153,6 +153,15 @@ fun FeaturesScreen(
                 enabled = uiState.features.isSupported(TuningFeature.BYPASS_CHARGING)
             )
 
+            FeatureSwitchCard(
+                title = "18W Fast Charge",
+                description = "Enable MediaTek Pump Express 2.0 fast charging (up to 3.0A/18W). Disable to stay on safe 500mA USB SDP current on PC ports.",
+                isChecked = uiState.features.fastChargeEnabled,
+                onCheckedChange = { viewModel.toggleFastCharge(it) },
+                icon = Icons.Default.BatteryChargingFull,
+                enabled = uiState.features.isSupported(TuningFeature.FAST_CHARGE)
+            )
+
             FeatureSliderCard(
                 title = "Charging Stop Limit",
                 valueLabel = "${uiState.features.chargeLimitPercent}%",

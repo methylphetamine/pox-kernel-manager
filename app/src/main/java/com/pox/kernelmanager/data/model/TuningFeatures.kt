@@ -12,6 +12,7 @@ enum class TuningFeature(val label: String, val unsupportedReason: String) {
     FPS_CAP("FPS cap", "Grant root - /proc/perfmgr/syslimiter is not writable"),
 
     BYPASS_CHARGING("Bypass charging", "Grant root - /proc/perfmgr/battery_bypass is not writable"),
+    FAST_CHARGE("Fast charge (18W)", "Grant root - /proc/perfmgr/fast_charge is not writable"),
     CHARGE_LIMIT("Charge limit", "Grant root - /proc/perfmgr/battery_limit is not writable"),
     THERMAL_GUARD("Thermal guard", "Grant root - /sys/kernel/battery_protection/thermal_guard is not writable"),
     DT2W("Double tap to wake", "Grant root - /proc/perfmgr/dt2w is not writable"),
@@ -59,6 +60,7 @@ data class TuningFeatures(
 
     // Smart Battery Guard & Bypass
     val bypassCharging: Boolean = false,
+    val fastChargeEnabled: Boolean = true,
     val chargeLimitPercent: Int = 100,
     val thermalGuardEnabled: Boolean = false,
     val tempLimitC: Int = 48,

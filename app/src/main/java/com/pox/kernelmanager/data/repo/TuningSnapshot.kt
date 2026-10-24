@@ -14,6 +14,7 @@ data class TuningSnapshot(
     val gamingMode: GamingModeLevel = GamingModeLevel.BALANCED,
     val touchBoost: Boolean = false,
     val bypassCharging: Boolean = false,
+    val fastChargeEnabled: Boolean = true,
     val chargeLimitPercent: Int = 100,
     val thermalGuard: Boolean = false,
     val tempLimitC: Int = 48,

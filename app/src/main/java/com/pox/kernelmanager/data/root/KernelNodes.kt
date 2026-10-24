@@ -91,6 +91,7 @@ object KernelNodes {
     const val GAMING_MODE_SYS = "/sys/kernel/gaming_mode"
 
     const val BATTERY_BYPASS_PROC = "/proc/perfmgr/battery_bypass"
+    const val FAST_CHARGE_PROC = "/proc/perfmgr/fast_charge"
     const val BATTERY_BYPASS_SYS = "/sys/kernel/battery_protection/bypass_mode"
     const val BATTERY_CHARGING_ENABLED = "/sys/class/power_supply/battery/charging_enabled"
 
@@ -231,6 +232,7 @@ object KernelNodes {
         USRTCH,
         BATTERY_BYPASS_PROC,
         BATTERY_BYPASS_SYS,
+        FAST_CHARGE_PROC,
         BATTERY_LIMIT_PROC,
         BATTERY_LIMIT_SYS,
         THERMAL_GUARD_SYS,
@@ -310,6 +312,7 @@ object KernelNodes {
         val xswapd = writable("/dev/memcg/memory.xswapd.enable")
 
         val bypassCharging = writable(BATTERY_BYPASS_PROC) || writable(BATTERY_BYPASS_SYS) || writable(BATTERY_CHARGING_ENABLED)
+        val fastCharge = writable(FAST_CHARGE_PROC)
         val chargeLimit = writable(BATTERY_LIMIT_PROC) || writable(BATTERY_LIMIT_SYS) || writable(BATTERY_CHARGE_CONTROL_LIMIT)
         val thermalGuard = writable(THERMAL_GUARD_SYS)
         val dt2w = writable(DT2W_PROC)
@@ -350,6 +353,7 @@ object KernelNodes {
             TuningFeature.XSWAPD to xswapd,
 
             TuningFeature.BYPASS_CHARGING to bypassCharging,
+        TuningFeature.FAST_CHARGE to fastCharge,
             TuningFeature.CHARGE_LIMIT to chargeLimit,
             TuningFeature.THERMAL_GUARD to thermalGuard,
             TuningFeature.DT2W to dt2w,
